@@ -30,10 +30,9 @@ participants:
   # Ship 1 - Interactive sailing vessel
   ship1:
     type: local
-    command: "mew"
+    command: "node"
     args:
-      - "mcp"
-      - "ship-server"
+      - "dist/mcp-servers/index.js"
     auto_start: true
     capabilities:
       - kind: "*" # Full capabilities (ship is trusted local participant)
@@ -49,10 +48,9 @@ participants:
   # Ship 2 - Second ship for combat testing (Phase 3)
   ship2:
     type: local
-    command: "mew"
+    command: "node"
     args:
-      - "mcp"
-      - "ship-server"
+      - "dist/mcp-servers/index.js"
     auto_start: true
     capabilities:
       - kind: "*" # Full capabilities (ship is trusted local participant)

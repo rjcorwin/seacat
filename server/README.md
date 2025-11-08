@@ -1,30 +1,31 @@
-# Seacat - Isometric Multiplayer Game
+# Seacat Server
 
-A multiplayer isometric game space built on MEW Protocol, where humans and AI agents can move around a 2D world, interact, and board ships together.
+MEW Protocol space configuration for the Seacat multiplayer sailing game.
 
-## Features
-
-- **4 Human Players**: Connect multiple human players to the same game world
-- **4 AI Agents**: Autonomous AI agents that can navigate and interact in the world
-- **Real-time Position Sync**: All player movements synchronized via MEW protocol streams
-- **Ship Support**: Players can board ships and sail together (coming soon)
-
-## Quick Start
-
-### Initialize a New Game Space
+## Setup
 
 ```bash
-mew init game-isometric my-game-world
-cd my-game-world
+npm install          # Install dependencies
+npm run build        # Compile ship MCP server
 ```
 
-### Start the Space
+## Running
 
 ```bash
-mew space up
+npm start            # Start MEW space with ships
 ```
 
 The gateway will start on port 8080 by default.
+
+## Ship MCP Servers
+
+The server includes two ship MCP servers (`ship1` and `ship2`) that:
+- Manage ship state (position, heading, health, velocity)
+- Handle ship controls (wheel, sails, cannons)
+- Broadcast ship positions to connected clients
+- Process combat and damage
+
+Ships are automatically started when you run `npm start`.
 
 ### Connect Players
 

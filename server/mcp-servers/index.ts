@@ -9,7 +9,7 @@
 
 import { ShipServer } from './ShipServer.js';
 import { ShipParticipant } from './ShipParticipant.js';
-import { MEWClient } from '../../client/MEWClient.js';
+import { MEWClient } from '@mew-protocol/mew/client';
 import { ShipConfig } from './types.js';
 import fs from 'fs';
 import path from 'path';

@@ -4,7 +4,7 @@
  * Connects ship to MEW space and broadcasts position updates
  */
 
-import { MEWClient } from '../../client/MEWClient.js';
+import { MEWClient } from '@mew-protocol/mew/client';
 import { ShipServer } from './ShipServer.js';
 import {
   ShipState,
