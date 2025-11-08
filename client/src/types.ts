@@ -158,10 +158,12 @@ export interface Ship {
 /**
  * Projectile entity managed by the game (c5x-ship-combat Phase 2)
  * Updated to use 3D physics (p2v-projectile-velocity Option 2)
+ * Updated to include shadows (b8s-cannonball-shadows)
  */
 export interface Projectile {
   id: string;
   sprite: Phaser.GameObjects.Arc;
+  shadow: Phaser.GameObjects.Ellipse; // Ground-level shadow (b8s-cannonball-shadows)
 
   // Ground position and velocity (horizontal movement on isometric map)
   groundX: number;
