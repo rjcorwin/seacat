@@ -1,0 +1,17 @@
+{
+  "name": "@seacat/server",
+  "version": "0.1.0",
+  "description": "Seacat game server - MEW Protocol space configuration",
+  "type": "module",
+  "scripts": {
+    "start": "mew space up",
+    "stop": "mew space down",
+    "connect": "mew space connect",
+    "logs": "pm2 logs --nostream --lines 50"
+  },
+  "author": "Seacat Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@mew-protocol/mew": "^0.6.2"
+  }
+}
