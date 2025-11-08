@@ -108,10 +108,24 @@ export class ProjectileManager {
     );
     sprite.setDepth(100); // Above ships and players
 
+    // b8s-cannonball-shadows: Create shadow ellipse at ground level
+    const shadowScreenX = spawnGroundX - spawnGroundY;
+    const shadowScreenY = (spawnGroundX + spawnGroundY) / 2;
+    const shadow = this.scene.add.ellipse(
+      shadowScreenX,
+      shadowScreenY,
+      12, // width (2x radius = 12px diameter)
+      6,  // height (1x radius, creates ellipse for isometric view)
+      0x000000, // Black
+      0.4 // 40% opacity at ground level
+    );
+    shadow.setDepth(99); // Just below projectile (depth 100)
+
     // Store projectile with 3D physics data
     const projectile: Projectile = {
       id,
       sprite,
+      shadow, // b8s-cannonball-shadows
 
       // Initialize ground position and velocity
       groundX: spawnGroundX,
@@ -156,6 +170,7 @@ export class ProjectileManager {
       const age = Date.now() - proj.spawnTime;
       if (age > this.LIFETIME) {
         proj.sprite.destroy();
+        proj.shadow.destroy(); // b8s-cannonball-shadows
         this.projectiles.delete(id);
         console.log(`[GameScene] Projectile ${id} despawned (lifetime expired). Total: ${this.projectiles.size}`);
         return;
@@ -179,6 +194,25 @@ export class ProjectileManager {
 
       proj.sprite.x = screenX;
       proj.sprite.y = screenY;
+
+      // b8s-cannonball-shadows: Update shadow position and appearance based on height
+      const shadowScreenX = proj.groundX - proj.groundY;
+      const shadowScreenY = (proj.groundX + proj.groundY) / 2; // heightZ = 0 for ground level
+
+      // Calculate scaling based on height (linear interpolation)
+      const MAX_HEIGHT = 200; // Typical max cannonball height
+      const heightRatio = Math.min(Math.max(proj.heightZ, 0) / MAX_HEIGHT, 1.0);
+
+      // Shadow size: 6px radius at ground, 2px at max height
+      const shadowRadius = 6 * (1 - heightRatio) + 2 * heightRatio;
+
+      // Shadow opacity: 40% at ground, 10% at max height
+      const shadowOpacity = 0.4 * (1 - heightRatio) + 0.1 * heightRatio;
+
+      proj.shadow.x = shadowScreenX;
+      proj.shadow.y = shadowScreenY;
+      proj.shadow.setSize(shadowRadius * 2, shadowRadius); // width, height (ellipse)
+      proj.shadow.setAlpha(shadowOpacity);
 
       // Phase 2c: Add smoke trail effect (30% chance per frame ~18 puffs/sec at 60fps)
       if (Math.random() < 0.3) {
@@ -246,6 +280,7 @@ export class ProjectileManager {
 
           // Despawn projectile locally
           proj.sprite.destroy();
+          proj.shadow.destroy(); // b8s-cannonball-shadows
           this.projectiles.delete(id);
           console.log(`[GameScene] Projectile ${id} hit ship ${ship.id}. Total: ${this.projectiles.size}`);
           hitShip = true;
@@ -273,6 +308,7 @@ export class ProjectileManager {
               this.sounds?.waterSplash?.play();
 
               proj.sprite.destroy();
+              proj.shadow.destroy(); // b8s-cannonball-shadows
               this.projectiles.delete(id);
               console.log(`[GameScene] Projectile ${id} hit water at ground(${proj.groundX.toFixed(1)}, ${proj.groundY.toFixed(1)}), screen(${proj.sprite.x.toFixed(1)}, ${proj.sprite.y.toFixed(1)}). Total: ${this.projectiles.size}`);
               return;
@@ -308,6 +344,7 @@ export class ProjectileManager {
       );
 
       projectile.sprite.setVisible(isVisible);
+      projectile.shadow.setVisible(isVisible); // b8s-cannonball-shadows
     }
   }
 }

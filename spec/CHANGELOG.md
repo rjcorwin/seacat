@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **b8s-cannonball-shadows**: Ground-level shadows for cannonball projectiles
+  - Status: Done
+  - Dynamic shadows that scale with projectile height
+  - Improves depth perception and trajectory prediction
+  - Uses simple ellipse graphics (no assets required)
+  - Shadows positioned at ground level using isometric projection
+  - Size and opacity decrease as cannonballs rise (6px→2px, 40%→10%)
+  - Linear interpolation based on height (MAX_HEIGHT = 200px)
+  - Integrated with diamond viewport culling
+  - See proposal: `spec/proposals/b8s-cannonball-shadows/`
+
 - **s8m-shimmer-particles**: Animated underwater shimmer particle system
   - Status: Done
   - Programmatic shimmer particles replace static background dots

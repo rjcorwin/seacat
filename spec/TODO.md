@@ -1,7 +1,7 @@
 # To Do
 
 ## MVP for play test
-- [ ] cannon ball shadows
+- [x] cannon ball shadows
 - [ ] bug: cannon retical should be on top of sprite
 - [ ] sprite: add helm, cannons, and sail lines to ship sprite
 - [ ] indicator for ship's helm
