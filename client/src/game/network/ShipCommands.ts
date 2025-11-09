@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MEWClient } from '@mew-protocol/mew/client';
 import { Ship } from '../../types.js';
+import * as Constants from '../utils/Constants.js';
 
 /**
  * Handles all ship control network commands and player-ship interactions.
@@ -85,7 +86,7 @@ export class ShipCommands {
       if (ship) {
         ship.controlPoints.mast.controlledBy = this.playerId;
       }
-      this.scene.cameras.main.zoomTo(0.8, 500); // Zoom out to 0.8x over 500ms
+      this.scene.cameras.main.zoomTo(Constants.CAMERA.CROWS_NEST_ZOOM, 500);
       console.log(`Climbed mast on ship ${shipId} - zooming out for better view`);
     } else {
       console.log(`Grabbed ${controlPoint} on ship ${shipId}`);
@@ -118,7 +119,7 @@ export class ShipCommands {
       if (ship) {
         ship.controlPoints.mast.controlledBy = null;
       }
-      this.scene.cameras.main.zoomTo(1.5, 500); // Zoom back to 1.5x over 500ms
+      this.scene.cameras.main.zoomTo(Constants.CAMERA.NORMAL_ZOOM, 500);
       console.log(`Climbed down mast - zooming back to normal view`);
     }
     // Wheel or sails

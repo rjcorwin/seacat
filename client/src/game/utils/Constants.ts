@@ -72,6 +72,14 @@ export const VIEWPORT = {
   TARGET_ASPECT_RATIO: 16 / 9,
 } as const;
 
+// Camera configuration
+export const CAMERA = {
+  // Normal gameplay zoom level (used when not in special view modes)
+  NORMAL_ZOOM: 1.5,
+  // Crow's nest zoom level (zoomed out for better tactical view from mast)
+  CROWS_NEST_ZOOM: 0.8,
+} as const;
+
 // Debug mode configuration (v9d-debug-visualization)
 // Set to true to show debug visualizations (ship boundary boxes, grabbable indicators)
 // Set to false for clean production visuals
