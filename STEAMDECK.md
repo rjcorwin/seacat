@@ -2,7 +2,18 @@
 
 ## Building for Steam Deck
 
-From your development machine (Mac/Linux/Windows):
+### From macOS (using Docker)
+
+**Prerequisites**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+```bash
+cd client
+npm run package:linux:docker
+```
+
+This uses Docker to build Linux binaries on your Mac. First run will take ~5 minutes to download the Docker image.
+
+### From Linux
 
 ```bash
 cd client
@@ -10,9 +21,11 @@ npm install
 npm run package:linux
 ```
 
-This will create two files in `client/release/`:
-- `Seacat-0.1.0.AppImage` - Self-contained executable
-- `Seacat-0.1.0.tar.gz` - Tarball archive
+### Build Output
+
+Both methods create files in `client/release/`:
+- `Seacat-0.1.0-arm64.AppImage` - Self-contained executable for Steam Deck
+- `@seacat/client-0.1.0-arm64.tar.gz` - Tarball archive
 
 ## Installing on Steam Deck
 
@@ -20,17 +33,17 @@ This will create two files in `client/release/`:
 
 1. **Transfer the file** to your Steam Deck:
    - Use a USB drive
-   - Or use SCP: `scp client/release/Seacat-0.1.0.AppImage deck@steamdeck:~/`
+   - Or use SCP: `scp client/release/Seacat-0.1.0-arm64.AppImage deck@steamdeck:~/`
    - Or use the Steam Deck's browser to download from a file host
 
 2. **Make it executable**:
    ```bash
-   chmod +x ~/Seacat-0.1.0.AppImage
+   chmod +x ~/Seacat-0.1.0-arm64.AppImage
    ```
 
 3. **Run it**:
    ```bash
-   ~/Seacat-0.1.0.AppImage
+   ~/Seacat-0.1.0-arm64.AppImage
    ```
 
 ### Method 2: Add to Steam as Non-Steam Game
@@ -42,7 +55,7 @@ This will create two files in `client/release/`:
 3. **Add to Steam**:
    - Open Steam in Desktop Mode
    - Click "Games" → "Add a Non-Steam Game to My Library"
-   - Click "Browse" and find your `Seacat-0.1.0.AppImage`
+   - Click "Browse" and find your `Seacat-0.1.0-arm64.AppImage`
    - Select it and click "Add Selected Programs"
 
 4. **Configure Launch Options** (optional):

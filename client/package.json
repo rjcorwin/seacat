@@ -11,7 +11,8 @@
     "build:watch": "tsc --watch",
     "bundle": "esbuild dist/renderer.js --bundle --outfile=dist/renderer.bundle.js --format=cjs --platform=node --external:electron",
     "package": "electron-builder",
-    "package:linux": "npm run build && electron-builder --linux"
+    "package:linux": "npm run build && electron-builder --linux",
+    "package:linux:docker": "./build-linux-docker.sh"
   },
   "author": "MEW Protocol Team",
   "license": "MIT",
