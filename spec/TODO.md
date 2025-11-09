@@ -2,9 +2,9 @@
 
 ## MVP for play test
 - [x] cannon ball shadows
-- [ ] bug: cannon retical should be on top of sprite
+- [x] bug: cannon retical should be on top of sprite
 - [ ] sprite: add helm, cannons, and sail lines to ship sprite
-- [ ] indicator for ship's helm
+- [ ] left/right indicator for ship's helm
 - [ ] bug: when releasing from crow's next grab point, should return to zoom level at start (too zoomed in)
 - [ ] Make a build that I can install on my steamdeck
 
