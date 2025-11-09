@@ -238,7 +238,13 @@ export class GameScene extends Phaser.Scene {
     // Create sound instances BEFORE managers that need them (c5x-ship-combat)
     // Howler.js works in Electron where Phaser's audio loader crashes
     // Key fix: absolute paths via window.location (relative paths fail in Electron)
-    const basePath = window.location.href.replace('index.html', '');
+    // Robust path resolution for both direct launch and Steam launcher
+    let basePath = window.location.href;
+    basePath = basePath.split('?')[0]; // Remove query params
+    basePath = basePath.replace(/index\.html.*$/, ''); // Remove index.html and anything after
+    if (!basePath.endsWith('/')) {
+      basePath += '/'; // Ensure trailing slash
+    }
     try {
       this.sounds = {
         cannonFire: new Howl({
