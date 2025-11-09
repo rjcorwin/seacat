@@ -73,6 +73,10 @@ export class ShipInputHandler {
   private lastInteractButtonState = false;
   private lastFireButtonState = false;
 
+  // Elevation adjustment throttling
+  private lastElevationAdjustTime = 0;
+  private readonly ELEVATION_THROTTLE_MS = 50; // Send elevation adjustments every 50ms max
+
   // UI indicators
   public nearControlPoints: Set<string> = new Set();
 
@@ -542,20 +546,16 @@ export class ShipInputHandler {
         }
 
         // Up/down arrows or left stick vertical to adjust elevation (g4p Phase 1)
+        // Throttle elevation adjustments to prevent flooding server with messages
+        const now = Date.now();
         const elevationInput = this.getElevationInput();
-        if (elevationInput === 'up') {
+        if (elevationInput && (now - this.lastElevationAdjustTime >= this.ELEVATION_THROTTLE_MS)) {
+          this.lastElevationAdjustTime = now;
           this.shipCommands.adjustElevation(
             this.controllingShip,
             this.controllingCannon.side,
             this.controllingCannon.index,
-            'up'
-          );
-        } else if (elevationInput === 'down') {
-          this.shipCommands.adjustElevation(
-            this.controllingShip,
-            this.controllingCannon.side,
-            this.controllingCannon.index,
-            'down'
+            elevationInput
           );
         }
 

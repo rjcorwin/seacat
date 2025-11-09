@@ -211,10 +211,12 @@ export class ShipManager {
         // c5x-ship-combat: Initialize cannons if present
         cannons: update.shipData.cannons ? {
           port: update.shipData.cannons.port.map((cannonData) => {
+            const cannonSprite = this.scene.add.graphics();
+            cannonSprite.setDepth(500); // On top of everything (aiming UI)
             const cannonIndicator = this.scene.add.graphics();
             cannonIndicator.setDepth(10); // Above other elements
             return {
-              sprite: this.scene.add.graphics(),
+              sprite: cannonSprite,
               indicator: cannonIndicator,
               relativePosition: {
                 x: cannonData.worldPosition.x - update.worldCoords.x,
@@ -227,10 +229,12 @@ export class ShipManager {
             };
           }),
           starboard: update.shipData.cannons.starboard.map((cannonData) => {
+            const cannonSprite = this.scene.add.graphics();
+            cannonSprite.setDepth(500); // On top of everything (aiming UI)
             const cannonIndicator = this.scene.add.graphics();
             cannonIndicator.setDepth(10); // Above other elements
             return {
-              sprite: this.scene.add.graphics(),
+              sprite: cannonSprite,
               indicator: cannonIndicator,
               relativePosition: {
                 x: cannonData.worldPosition.x - update.worldCoords.x,
@@ -385,7 +389,7 @@ export class ShipManager {
     this.shipRenderer.drawGrabableIndicator(ship.controlPoints.sails.indicator, ship.controlPoints.sails, ship.sprite, ship.rotation, this.nearControlPoints.has(`${ship.id}:sails`), currentTime);
     this.shipRenderer.drawGrabableIndicator(ship.controlPoints.mast.indicator, ship.controlPoints.mast, ship.sprite, ship.rotation, this.nearControlPoints.has(`${ship.id}:mast`), currentTime);
 
-    // c5x-ship-combat: Draw cannon control points
+    // c5x-ship-combat: Draw cannon control points and aiming UI
     if (ship.cannons) {
       ship.cannons.port.forEach((cannon, index) => {
         const isPlayerNear = this.nearControlPoints.has(`${ship.id}:cannon-port-${index}`);
@@ -393,9 +397,8 @@ export class ShipManager {
           this.getControllingPoint() === 'cannon' &&
           this.getControllingCannon()?.side === 'port' &&
           this.getControllingCannon()?.index === index;
-        if (DEBUG_MODE) {
-          this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
-        }
+        // Always draw cannon (aiming UI shows when controlled)
+        this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
         this.shipRenderer.drawGrabableIndicator(cannon.indicator, cannon, ship.sprite, ship.rotation, isPlayerNear, currentTime);
       });
       ship.cannons.starboard.forEach((cannon, index) => {
@@ -404,9 +407,8 @@ export class ShipManager {
           this.getControllingPoint() === 'cannon' &&
           this.getControllingCannon()?.side === 'starboard' &&
           this.getControllingCannon()?.index === index;
-        if (DEBUG_MODE) {
-          this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
-        }
+        // Always draw cannon (aiming UI shows when controlled)
+        this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
         this.shipRenderer.drawGrabableIndicator(cannon.indicator, cannon, ship.sprite, ship.rotation, isPlayerNear, currentTime);
       });
     }
@@ -497,7 +499,7 @@ export class ShipManager {
       this.shipRenderer.drawGrabableIndicator(ship.controlPoints.sails.indicator, ship.controlPoints.sails, ship.sprite, ship.rotation, this.nearControlPoints.has(`${ship.id}:sails`), currentTime);
       this.shipRenderer.drawGrabableIndicator(ship.controlPoints.mast.indicator, ship.controlPoints.mast, ship.sprite, ship.rotation, this.nearControlPoints.has(`${ship.id}:mast`), currentTime);
 
-      // c5x-ship-combat: Draw cannon control points
+      // c5x-ship-combat: Draw cannon control points and aiming UI
       if (ship.cannons) {
         ship.cannons.port.forEach((cannon, index) => {
           const isPlayerNear = this.nearControlPoints.has(`${ship.id}:cannon-port-${index}`);
@@ -505,9 +507,8 @@ export class ShipManager {
             this.getControllingPoint() === 'cannon' &&
             this.getControllingCannon()?.side === 'port' &&
             this.getControllingCannon()?.index === index;
-          if (DEBUG_MODE) {
-            this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
-          }
+          // Always draw cannon (aiming UI shows when controlled)
+          this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
           this.shipRenderer.drawGrabableIndicator(cannon.indicator, cannon, ship.sprite, ship.rotation, isPlayerNear, currentTime);
         });
         ship.cannons.starboard.forEach((cannon, index) => {
@@ -516,9 +517,8 @@ export class ShipManager {
             this.getControllingPoint() === 'cannon' &&
             this.getControllingCannon()?.side === 'starboard' &&
             this.getControllingCannon()?.index === index;
-          if (DEBUG_MODE) {
-            this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
-          }
+          // Always draw cannon (aiming UI shows when controlled)
+          this.shipRenderer.drawCannon(cannon.sprite, cannon, ship.sprite, ship.rotation, isPlayerNear, isControlledByUs, this.getCurrentCannonAim());
           this.shipRenderer.drawGrabableIndicator(cannon.indicator, cannon, ship.sprite, ship.rotation, isPlayerNear, currentTime);
         });
       }
