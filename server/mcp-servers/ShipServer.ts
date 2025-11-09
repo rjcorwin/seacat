@@ -618,8 +618,10 @@ export class ShipServer {
       return;
     }
 
-    // Adjust elevation by 5° (0.087 radians) per key press
-    const elevationStep = Math.PI / 36; // 5° = π/36
+    // Adjust elevation by 0.1° (0.00175 radians) per frame
+    // This is called every frame when key is held, so small increments feel precise
+    // At 60fps: 6°/second, takes ~7.5 seconds to go from 15° to 60° (full range)
+    const elevationStep = Math.PI / 1800; // 0.1° = π/1800
     const delta = adjustment === 'up' ? elevationStep : -elevationStep;
     const newElevation = cannon.elevationAngle + delta;
 
