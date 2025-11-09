@@ -323,6 +323,101 @@ export class ShipRenderer {
   }
 
   /**
+   * Draw wheel rotation indicator above wheel control point (h4w-helm-indicator)
+   * Shows arc with current rotation, center marker, and position dot
+   * Only visible when local player is controlling wheel
+   * @param graphics Graphics object to draw on
+   * @param wheelControlPoint Wheel control point data
+   * @param shipSprite Ship sprite
+   * @param shipRotation Ship rotation in radians
+   * @param wheelAngle Current wheel angle in radians (-PI to PI, 0 = centered)
+   * @param isControlledByUs Whether local player is controlling wheel
+   */
+  drawWheelIndicator(
+    graphics: Phaser.GameObjects.Graphics,
+    wheelControlPoint: { relativePosition: { x: number; y: number } },
+    shipSprite: Phaser.GameObjects.Sprite,
+    shipRotation: number,
+    wheelAngle: number,
+    isControlledByUs: boolean
+  ): void {
+    graphics.clear();
+
+    // Only draw if we're controlling the wheel
+    if (!isControlledByUs) {
+      return;
+    }
+
+    // Calculate wheel world position with rotation
+    const rotatedPos = IsoMath.rotatePointIsometric(
+      wheelControlPoint.relativePosition,
+      shipRotation
+    );
+    const worldX = shipSprite.x + rotatedPos.x;
+    const worldY = shipSprite.y + rotatedPos.y;
+
+    // Position indicator above control point
+    const INDICATOR_OFFSET = 35; // pixels above wheel
+    const indicatorY = worldY - INDICATOR_OFFSET;
+    const radius = 30;
+
+    // 1. Draw background arc (full range: left to right, semicircle)
+    graphics.lineStyle(3, 0x888888, 0.3);
+    graphics.beginPath();
+    graphics.arc(
+      worldX,
+      indicatorY,
+      radius,
+      -Math.PI,      // Start at left (-180°)
+      0,             // End at right (0° = pointing down in Phaser coordinates)
+      false
+    );
+    graphics.strokePath();
+
+    // 2. Draw center marker (vertical line at top)
+    graphics.lineStyle(2, 0xffffff, 1.0);
+    graphics.beginPath();
+    graphics.moveTo(worldX, indicatorY - radius);
+    graphics.lineTo(worldX, indicatorY - radius - 10);
+    graphics.strokePath();
+
+    // 3. Draw filled arc from center to current angle
+    const CENTERED_THRESHOLD = Math.PI / 36; // ±5°
+    let color: number;
+    if (Math.abs(wheelAngle) < CENTERED_THRESHOLD) {
+      color = 0x00ff00; // Green (centered)
+    } else if (wheelAngle < 0) {
+      color = 0x00ffff; // Cyan (left)
+    } else {
+      color = 0xff00ff; // Magenta (right)
+    }
+
+    // Convert wheel angle (-π to π) to screen arc angle
+    // Wheel: -π (full left), 0 (center), +π (full right)
+    // Screen arc: -π (left), -π/2 (top/center), 0 (right)
+    // Formula: screenAngle = -π/2 + (wheelAngle / π) * (π / 2)
+    const arcAngle = -Math.PI / 2 + (wheelAngle / Math.PI) * (Math.PI / 2);
+
+    graphics.lineStyle(4, color, 0.9);
+    graphics.beginPath();
+    graphics.arc(
+      worldX,
+      indicatorY,
+      radius,
+      -Math.PI / 2,  // Start at top (center position)
+      arcAngle,      // End at current wheel angle
+      wheelAngle < 0 // Anticlockwise if turning left
+    );
+    graphics.strokePath();
+
+    // 4. Draw position marker (dot at current angle)
+    const markerX = worldX + Math.cos(arcAngle) * radius;
+    const markerY = indicatorY + Math.sin(arcAngle) * radius;
+    graphics.fillStyle(color, 1.0);
+    graphics.fillCircle(markerX, markerY, 4);
+  }
+
+  /**
    * Calculate sprite sheet frame index from ship rotation (s6r-ship-sprite-rendering)
    * @param rotation Ship rotation in radians
    * @returns Frame index (0-63) corresponding to rotation angle
