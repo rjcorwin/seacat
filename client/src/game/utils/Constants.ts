@@ -54,10 +54,11 @@ export const ISO_SOUTHEAST = { x: ISO_X_AXIS.x / isoXLength, y: ISO_X_AXIS.y / i
 export const ISO_SOUTHWEST = { x: -ISO_NORTHEAST.x, y: -ISO_NORTHEAST.y };
 export const ISO_NORTHWEST = { x: -ISO_SOUTHEAST.x, y: -ISO_SOUTHEAST.y };
 
-// Viewport configuration (d7v-diamond-viewport)
+// Viewport configuration (d7v-diamond-viewport, c9v-crowsnest-viewport)
 export const VIEWPORT = {
   // Square diamond viewport (rotated 45°)
   DIAMOND_SIZE_TILES: 35,  // 35×35 tile square = larger diamond for better visibility
+  DIAMOND_SIZE_CROWS_NEST: 55,  // 55×55 tile square for crow's nest lookout view (57% more area)
 
   // Border padding (in tiles) - asymmetric for better aesthetics
   DIAMOND_BORDER_TOP_TILES: 7,    // More space for sky (pulled diamond down)

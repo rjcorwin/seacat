@@ -79,6 +79,7 @@ export class GameScene extends Phaser.Scene {
   private onShip: string | null = null; // Track if local player is on a ship
   private shipRelativePosition: { x: number; y: number } | null = null; // Position relative to ship center
   private applyingShipRotation = false; // Flag to prevent overwriting rotated position
+  private isInCrowsNest = false; // Track if player is in crow's nest (controls viewport size - c9v)
 
   // Phase 5: Sound effect instances using Howler.js (c5x-ship-combat)
   private sounds!: {
@@ -438,6 +439,22 @@ export class GameScene extends Phaser.Scene {
     // this.viewportRenderer.renderBorder(centerX, centerY);
   }
 
+  /**
+   * Set crow's nest state and update viewport size (c9v-crowsnest-viewport)
+   * @param inCrowsNest - true if player is in crow's nest (at mast), false if on deck
+   */
+  public setInCrowsNest(inCrowsNest: boolean): void {
+    this.isInCrowsNest = inCrowsNest;
+    ViewportManager.setViewportSize(inCrowsNest ? 'crowsnest' : 'normal');
+  }
+
+  /**
+   * Get crow's nest state
+   * @returns true if player is currently in crow's nest
+   */
+  public getIsInCrowsNest(): boolean {
+    return this.isInCrowsNest;
+  }
 
   private checkShipBoundary() {
     // Check if player is within any ship's deck boundary (using OBB for rotated ships)

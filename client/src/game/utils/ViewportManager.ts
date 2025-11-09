@@ -21,6 +21,29 @@ import { VIEWPORT, TILE_WIDTH, TILE_HEIGHT } from './Constants.js';
  */
 export class ViewportManager {
   /**
+   * Current viewport size mode (c9v-crowsnest-viewport)
+   * - 'normal': Standard deck-level view (35 tiles)
+   * - 'crowsnest': Extended lookout view (55 tiles)
+   */
+  private static currentSize: 'normal' | 'crowsnest' = 'normal';
+
+  /**
+   * Set the viewport size mode (c9v-crowsnest-viewport)
+   * @param size - 'normal' for deck view, 'crowsnest' for expanded view
+   */
+  public static setViewportSize(size: 'normal' | 'crowsnest'): void {
+    this.currentSize = size;
+  }
+
+  /**
+   * Get the current viewport size mode (c9v-crowsnest-viewport)
+   * @returns Current viewport size mode
+   */
+  public static getCurrentSize(): 'normal' | 'crowsnest' {
+    return this.currentSize;
+  }
+
+  /**
    * Checks if a world position is within the diamond viewport
    * centered on the given player position.
    *
@@ -57,19 +80,28 @@ export class ViewportManager {
 
   /**
    * Gets the diamond radius in tiles (for tile-based culling)
+   * Uses appropriate size based on current viewport mode (c9v-crowsnest-viewport)
    */
   static getDiamondRadiusTiles(): number {
-    return VIEWPORT.DIAMOND_SIZE_TILES / 2;
+    const tiles = this.currentSize === 'crowsnest'
+      ? VIEWPORT.DIAMOND_SIZE_CROWS_NEST
+      : VIEWPORT.DIAMOND_SIZE_TILES;
+    return tiles / 2;
   }
 
   /**
    * Calculates the pixel dimensions of the diamond viewport
    * (square diamond: width and height are equal in tile count)
+   * Uses appropriate size based on current viewport mode (c9v-crowsnest-viewport)
    */
   static getDiamondDimensions(): { width: number; height: number } {
+    const tiles = this.currentSize === 'crowsnest'
+      ? VIEWPORT.DIAMOND_SIZE_CROWS_NEST
+      : VIEWPORT.DIAMOND_SIZE_TILES;
+
     return {
-      width: VIEWPORT.DIAMOND_SIZE_TILES * TILE_WIDTH,
-      height: VIEWPORT.DIAMOND_SIZE_TILES * TILE_HEIGHT,
+      width: tiles * TILE_WIDTH,
+      height: tiles * TILE_HEIGHT,
     };
   }
 

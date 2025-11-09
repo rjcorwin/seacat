@@ -18,6 +18,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Enhances nautical authenticity and game readability
   - See proposal: `spec/proposals/s2e-ship-enhancements/`
 
+- **c9v-crowsnest-viewport**: Expanded viewport when in crow's nest
+  - Status: Done
+  - Increases draw distance from 35 to 55 tiles when climbing mast (57% more area)
+  - Provides strategic lookout advantage for navigation and combat
+  - Automatic viewport switching on mast grab/release
+  - Maintains 60 FPS performance with larger culling area
+  - Seamless integration with existing diamond viewport system
+  - Client-side only (no server sync required)
+  - See proposal: `spec/proposals/c9v-crowsnest-viewport/`
+
 - **b8s-cannonball-shadows**: Ground-level shadows for cannonball projectiles
   - Status: Done
   - Dynamic shadows that scale with projectile height

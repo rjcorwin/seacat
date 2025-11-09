@@ -8,7 +8,10 @@
 - [x] bug: our recent adjustment of the cannon pitch going up/down too fast now has it going way too slow
 - [x] indicator of sails up/down when holding them
 - [x] Make a build that I can install on my steamdeck
-- [ ] sprite: add helm, cannons, and sail lines to ship sprite
+- [x] sprite: add helm
+- [x] mast zoom out (crows nest) should increase the draw distance of the viewable world
+- [ ] fade in of tiles on movement, the border that is fading in, i think it's 3 rows deep, let's switch to 2 with the inside tile very close to not transparent to clean things up, less blury at the edges when moving.
+- [ ] sprite: cannons, and sail lines to ship sprite
 
 ## phase 2
 - [ ] inventory system for ship

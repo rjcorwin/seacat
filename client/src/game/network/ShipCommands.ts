@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MEWClient } from '@mew-protocol/mew/client';
 import { Ship } from '../../types.js';
 import * as Constants from '../utils/Constants.js';
+import { GameScene } from '../GameScene.js';
 
 /**
  * Handles all ship control network commands and player-ship interactions.
@@ -51,7 +52,7 @@ import * as Constants from '../utils/Constants.js';
  */
 export class ShipCommands {
   constructor(
-    private scene: Phaser.Scene,
+    private scene: GameScene,
     private client: MEWClient,
     private playerId: string,
     private ships: Map<string, Ship>,
@@ -80,14 +81,15 @@ export class ShipCommands {
     this.setControllingShip(shipId);
     this.setControllingPoint(controlPoint);
 
-    // If grabbing mast, zoom camera out for better view
+    // If grabbing mast, zoom camera out and expand viewport for better view (c9v-crowsnest-viewport)
     if (controlPoint === 'mast') {
       const ship = this.ships.get(shipId);
       if (ship) {
         ship.controlPoints.mast.controlledBy = this.playerId;
       }
       this.scene.cameras.main.zoomTo(Constants.CAMERA.CROWS_NEST_ZOOM, 500);
-      console.log(`Climbed mast on ship ${shipId} - zooming out for better view`);
+      this.scene.setInCrowsNest(true);
+      console.log(`Climbed mast on ship ${shipId} - zooming out and expanding viewport`);
     } else {
       console.log(`Grabbed ${controlPoint} on ship ${shipId}`);
     }
@@ -113,14 +115,15 @@ export class ShipCommands {
       this.setControllingCannon(null);
       this.setCurrentCannonAim(0);
     }
-    // Mast is client-side only, don't send to ship server
+    // Mast is client-side only, don't send to ship server (c9v-crowsnest-viewport)
     else if (controllingPoint === 'mast') {
       const ship = this.ships.get(controllingShip);
       if (ship) {
         ship.controlPoints.mast.controlledBy = null;
       }
       this.scene.cameras.main.zoomTo(Constants.CAMERA.NORMAL_ZOOM, 500);
-      console.log(`Climbed down mast - zooming back to normal view`);
+      this.scene.setInCrowsNest(false);
+      console.log(`Climbed down mast - zooming back to normal view and restoring viewport`);
     }
     // Wheel or sails
     else {
