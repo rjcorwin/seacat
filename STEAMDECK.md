@@ -33,8 +33,9 @@ Both methods create files in `client/release/`:
 
 1. **Transfer the file** to your Steam Deck:
    - Use a USB drive
-   - Or use SCP: `scp client/release/Seacat-0.1.0.AppImage deck@steamdeck:~/`
+   - Or use SCP: `scp client/release/Seacat-0.1.0.AppImage deck@steamdeck.local:~/`
    - Or use the Steam Deck's browser to download from a file host
+   - **Note:** For `steamdeck.local` to work, enable avahi on Steam Deck (see Troubleshooting)
 
 2. **Make it executable**:
    ```bash
@@ -129,6 +130,21 @@ Copy this token and use it in your Steam launch options with `--token=...`
 3. **Steam Launch Options** (if running from Steam):
    - Right-click game → Properties → Launch Options
    - Add: `--no-sandbox` or `--disable-gpu-sandbox`
+
+### steamdeck.local doesn't resolve (for deployment/SSH)
+
+Enable avahi for mDNS hostname resolution:
+```bash
+# On Steam Deck in Desktop Mode
+sudo pacman -S avahi nss-mdns
+sudo systemctl enable avahi-daemon
+sudo systemctl start avahi-daemon
+
+# Configure nsswitch for mDNS
+sudo sed -i 's/^hosts:.*/hosts: mymachines mdns_minimal [NOTFOUND=return] resolve [!UNAVAIL=return] files myhostname dns/' /etc/nsswitch.conf
+```
+
+After this, `steamdeck.local` will work from your Mac/PC.
 
 ### AppImage won't run
 - Make sure you ran `chmod +x` on the file

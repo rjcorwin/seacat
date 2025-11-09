@@ -17,7 +17,7 @@ npm run build
 # Use Docker only for electron-builder (packaging)
 # This avoids architecture issues with esbuild
 echo "🐳 Using Docker for Linux packaging..."
-docker run --rm -ti \
+docker run --rm \
   --platform linux/amd64 \
   --env ELECTRON_CACHE="/root/.cache/electron" \
   --env ELECTRON_BUILDER_CACHE="/root/.cache/electron-builder" \
