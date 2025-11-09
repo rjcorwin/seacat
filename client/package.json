@@ -10,7 +10,8 @@
     "build": "tsc && npm run bundle",
     "build:watch": "tsc --watch",
     "bundle": "esbuild dist/renderer.js --bundle --outfile=dist/renderer.bundle.js --format=cjs --platform=node --external:electron",
-    "package": "electron-builder"
+    "package": "electron-builder",
+    "package:linux": "npm run build && electron-builder --linux"
   },
   "author": "MEW Protocol Team",
   "license": "MIT",
@@ -54,8 +55,15 @@
     },
     "linux": {
       "target": [
-        "AppImage"
-      ]
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Game",
+      "desktop": {
+        "Name": "Seacat",
+        "Comment": "Cozy multiplayer sailing game with cats",
+        "Categories": "Game;ActionGame;"
+      }
     }
   },
   "optionalDependencies": {
