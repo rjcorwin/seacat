@@ -21,7 +21,7 @@ import sys
 
 # Configuration
 SHIP_OBJECT_NAME = "Ship"
-OUTPUT_DIR = "assets/sprites/ship_frames"
+OUTPUT_DIR = "sprites/ship_frames"  # Relative to assets/ (blend file is in assets/blender/)
 NUM_FRAMES = 64
 RESOLUTION = 256  # Increased from 128 to reduce blur when scaled in-game
 

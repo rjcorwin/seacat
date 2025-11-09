@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **s2e-ship-enhancements**: Add helm, cannons, and rigging to ship sprite
+  - Status: Draft (proposal created 2025-11-09)
+  - Adds steering wheel (helm) at stern (x=-54, y=0)
+  - Adds 4 cannons on port/starboard sides (positions from server config)
+  - Adds 6 rigging lines connecting mast to sails
+  - Maintains blocky/voxel Minecraft aesthetic from s6r
+  - Uses existing Blender render pipeline (64 frames, 256×256 each)
+  - Provides visual feedback for control point interactions
+  - Enhances nautical authenticity and game readability
+  - See proposal: `spec/proposals/s2e-ship-enhancements/`
+
 - **b8s-cannonball-shadows**: Ground-level shadows for cannonball projectiles
   - Status: Done
   - Dynamic shadows that scale with projectile height

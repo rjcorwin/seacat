@@ -418,6 +418,124 @@ export class ShipRenderer {
   }
 
   /**
+   * Draw sails speed level indicator above sails control point
+   * Shows vertical bar with segments for each speed level (0-3)
+   * Only visible when local player is controlling sails
+   * @param graphics Graphics object to draw on
+   * @param sailsControlPoint Sails control point data
+   * @param shipSprite Ship sprite
+   * @param shipRotation Ship rotation in radians
+   * @param speedLevel Current speed level (0=furled, 1=slow, 2=medium, 3=full)
+   * @param isControlledByUs Whether local player is controlling sails
+   */
+  drawSailsIndicator(
+    graphics: Phaser.GameObjects.Graphics,
+    sailsControlPoint: { relativePosition: { x: number; y: number } },
+    shipSprite: Phaser.GameObjects.Sprite,
+    shipRotation: number,
+    speedLevel: number,
+    isControlledByUs: boolean
+  ): void {
+    graphics.clear();
+
+    // Only draw if we're controlling the sails
+    if (!isControlledByUs) {
+      return;
+    }
+
+    // Calculate sails world position with rotation
+    const rotatedPos = IsoMath.rotatePointIsometric(
+      sailsControlPoint.relativePosition,
+      shipRotation
+    );
+    const worldX = shipSprite.x + rotatedPos.x;
+    const worldY = shipSprite.y + rotatedPos.y;
+
+    // Position indicator above control point
+    const INDICATOR_OFFSET = 40; // pixels above sails
+    const indicatorY = worldY - INDICATOR_OFFSET;
+    const barWidth = 30;
+    const segmentHeight = 8;
+    const segmentGap = 2;
+    const numSegments = 3; // 3 segments for levels 1-3 (level 0 = all dark)
+
+    // Draw background container
+    const containerHeight = (segmentHeight + segmentGap) * numSegments - segmentGap;
+    graphics.fillStyle(0x000000, 0.5);
+    graphics.fillRect(
+      worldX - barWidth / 2 - 2,
+      indicatorY - containerHeight - 2,
+      barWidth + 4,
+      containerHeight + 4
+    );
+
+    // Draw speed level label at top
+    graphics.fillStyle(0xffffff, 0.9);
+    graphics.fillRect(
+      worldX - barWidth / 2,
+      indicatorY - containerHeight - 14,
+      barWidth,
+      10
+    );
+
+    // Draw segments from bottom to top
+    for (let i = 0; i < numSegments; i++) {
+      const segmentIndex = i + 1; // Segments represent levels 1, 2, 3
+      const isActive = speedLevel >= segmentIndex;
+      const segmentY = indicatorY - (i + 1) * (segmentHeight + segmentGap);
+
+      // Color based on speed level
+      let color: number;
+      if (segmentIndex === 1) {
+        color = 0x00ff00; // Green for slow
+      } else if (segmentIndex === 2) {
+        color = 0xffff00; // Yellow for medium
+      } else {
+        color = 0xff8800; // Orange for full
+      }
+
+      // Draw segment (filled if active, dark outline if inactive)
+      if (isActive) {
+        graphics.fillStyle(color, 0.9);
+        graphics.fillRect(
+          worldX - barWidth / 2,
+          segmentY,
+          barWidth,
+          segmentHeight
+        );
+      } else {
+        graphics.lineStyle(1, 0x666666, 0.5);
+        graphics.strokeRect(
+          worldX - barWidth / 2,
+          segmentY,
+          barWidth,
+          segmentHeight
+        );
+      }
+    }
+
+    // Draw "FURLED" indicator if speed is 0
+    if (speedLevel === 0) {
+      graphics.fillStyle(0x888888, 0.7);
+      graphics.fillRect(
+        worldX - barWidth / 2,
+        indicatorY - containerHeight / 2 - 4,
+        barWidth,
+        8
+      );
+    }
+
+    // Draw border around container
+    graphics.lineStyle(2, 0xffffff, 0.8);
+    graphics.strokeRect(
+      worldX - barWidth / 2 - 2,
+      indicatorY - containerHeight - 2,
+      barWidth + 4,
+      containerHeight + 4
+    );
+  }
+
+  /**
    * Calculate sprite sheet frame index from ship rotation (s6r-ship-sprite-rendering)
    * @param rotation Ship rotation in radians
    * @returns Frame index (0-63) corresponding to rotation angle

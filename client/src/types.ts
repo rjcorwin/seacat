@@ -158,6 +158,8 @@ export interface Ship {
   // h4w-helm-indicator: Wheel rotation indicator
   wheelAngle: number; // Current wheel rotation (-PI to PI, 0 = centered)
   wheelIndicator?: Phaser.GameObjects.Graphics; // Graphics object for rotation indicator
+  // Sails speed level indicator
+  sailsIndicator?: Phaser.GameObjects.Graphics; // Graphics object for sails level indicator
 }
 
 /**

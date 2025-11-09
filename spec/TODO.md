@@ -6,8 +6,8 @@
 - [x] left/right indicator for ship's helm
 - [x] bug: when releasing from crow's next grab point, should return to zoom level at start (too zoomed in)
 - [x] bug: our recent adjustment of the cannon pitch going up/down too fast now has it going way too slow
-- [ ] indicator of sails up/down when holding them
-- [ ] Make a build that I can install on my steamdeck
+- [x] indicator of sails up/down when holding them
+- [x] Make a build that I can install on my steamdeck
 - [ ] sprite: add helm, cannons, and sail lines to ship sprite
 
 ## phase 2

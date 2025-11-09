@@ -164,6 +164,10 @@ export class ShipManager {
       const wheelRotationIndicator = this.scene.add.graphics();
       wheelRotationIndicator.setDepth(520); // Above cannons (500)
 
+      // Create sails speed level indicator
+      const sailsLevelIndicator = this.scene.add.graphics();
+      sailsLevelIndicator.setDepth(520); // Above cannons (500), same as wheel indicator
+
       // Calculate relative positions from world positions
       const wheelRelative = {
         x: update.shipData.controlPoints.wheel.worldPosition.x - update.worldCoords.x,
@@ -263,6 +267,8 @@ export class ShipManager {
         // h4w-helm-indicator: Initialize wheel rotation state
         wheelAngle: update.shipData.wheelAngle || 0,
         wheelIndicator: wheelRotationIndicator,
+        // Sails speed level indicator
+        sailsIndicator: sailsLevelIndicator,
       };
 
       // NOTE: Don't call setRotation() on sprite - rotation is shown via sprite frames (s6r-ship-sprite-rendering)
@@ -562,6 +568,20 @@ export class ShipManager {
         );
       }
 
+      // Draw sails speed level indicator if controlling sails
+      const isControllingSails = this.getControllingShip() === ship.id &&
+                                 this.getControllingPoint() === 'sails';
+      if (ship.sailsIndicator) {
+        this.shipRenderer.drawSailsIndicator(
+          ship.sailsIndicator,
+          ship.controlPoints.sails,
+          ship.sprite,
+          ship.rotation,
+          ship.speedLevel,
+          isControllingSails
+        );
+      }
+
       // Phase 3: Draw health bar above ship
       if (DEBUG_MODE) {
         this.effectsRenderer.drawHealthBar(ship.sprite.x, ship.sprite.y - 40, ship.health, ship.maxHealth);
@@ -637,6 +657,11 @@ export class ShipManager {
       // h4w-helm-indicator: Update wheel indicator visibility
       if (ship.wheelIndicator) {
         ship.wheelIndicator.setVisible(isVisible);
+      }
+
+      // Update sails indicator visibility
+      if (ship.sailsIndicator) {
+        ship.sailsIndicator.setVisible(isVisible);
       }
     }
   }
