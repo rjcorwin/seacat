@@ -25,7 +25,7 @@ docker run --rm -ti \
   -v ~/.cache/electron:/root/.cache/electron \
   -v ~/.cache/electron-builder:/root/.cache/electron-builder \
   electronuserland/builder:wine \
-  /bin/bash -c "cd /project && npm install --ignore-scripts && npx electron-builder --linux --arm64"
+  /bin/bash -c "cd /project && npm install --ignore-scripts && npx electron-builder --linux --x64"
 
 echo ""
 echo "✅ Build complete!"

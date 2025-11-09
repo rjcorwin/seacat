@@ -24,8 +24,8 @@ npm run package:linux
 ### Build Output
 
 Both methods create files in `client/release/`:
-- `Seacat-0.1.0-arm64.AppImage` - Self-contained executable for Steam Deck
-- `@seacat/client-0.1.0-arm64.tar.gz` - Tarball archive
+- `Seacat-0.1.0.AppImage` - Self-contained executable for Steam Deck (x86_64)
+- `@seacat/client-0.1.0.tar.gz` - Tarball archive
 
 ## Installing on Steam Deck
 
@@ -33,17 +33,17 @@ Both methods create files in `client/release/`:
 
 1. **Transfer the file** to your Steam Deck:
    - Use a USB drive
-   - Or use SCP: `scp client/release/Seacat-0.1.0-arm64.AppImage deck@steamdeck:~/`
+   - Or use SCP: `scp client/release/Seacat-0.1.0.AppImage deck@steamdeck:~/`
    - Or use the Steam Deck's browser to download from a file host
 
 2. **Make it executable**:
    ```bash
-   chmod +x ~/Seacat-0.1.0-arm64.AppImage
+   chmod +x ~/Seacat-0.1.0.AppImage
    ```
 
 3. **Run it**:
    ```bash
-   ~/Seacat-0.1.0-arm64.AppImage
+   ~/Seacat-0.1.0.AppImage
    ```
 
 ### Method 2: Add to Steam as Non-Steam Game
@@ -55,7 +55,7 @@ Both methods create files in `client/release/`:
 3. **Add to Steam**:
    - Open Steam in Desktop Mode
    - Click "Games" → "Add a Non-Steam Game to My Library"
-   - Click "Browse" and find your `Seacat-0.1.0-arm64.AppImage`
+   - Click "Browse" and find your `Seacat-0.1.0.AppImage`
    - Select it and click "Add Selected Programs"
 
 4. **Configure Launch Options** (optional):
