@@ -65,9 +65,4 @@ participants:
 
 defaults:
   capabilities:
-    - kind: "chat"
-    - kind: "stream/request"
-    - kind: "stream/open"
-    - kind: "stream/close"
-    - kind: "stream/publish"
-    - kind: "participant/status"
+    - kind: "*" # Allow all message kinds for game participants
