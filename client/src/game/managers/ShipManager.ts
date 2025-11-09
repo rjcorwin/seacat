@@ -160,6 +160,10 @@ export class ShipManager {
       sailsIndicator.setDepth(10);
       mastIndicator.setDepth(10);
 
+      // h4w-helm-indicator: Create wheel rotation indicator
+      const wheelRotationIndicator = this.scene.add.graphics();
+      wheelRotationIndicator.setDepth(520); // Above cannons (500)
+
       // Calculate relative positions from world positions
       const wheelRelative = {
         x: update.shipData.controlPoints.wheel.worldPosition.x - update.worldCoords.x,
@@ -256,6 +260,9 @@ export class ShipManager {
         // Phase 4: Initialize sinking state
         sinking: update.shipData.sinking || false,
         sinkStartTime: 0,
+        // h4w-helm-indicator: Initialize wheel rotation state
+        wheelAngle: update.shipData.wheelAngle || 0,
+        wheelIndicator: wheelRotationIndicator,
       };
 
       // NOTE: Don't call setRotation() on sprite - rotation is shown via sprite frames (s6r-ship-sprite-rendering)
@@ -301,6 +308,10 @@ export class ShipManager {
       // Phase 3: Sync health from server
       ship.health = update.shipData.health || ship.health || 100;
       ship.maxHealth = update.shipData.maxHealth || ship.maxHealth || 100;
+
+      // h4w-helm-indicator: Sync wheel angle from server
+      ship.wheelAngle = update.shipData.wheelAngle !== undefined ?
+        update.shipData.wheelAngle : ship.wheelAngle;
 
       // Phase 4: Detect sinking transition
       if (update.shipData.sinking && !ship.sinking) {
@@ -413,6 +424,20 @@ export class ShipManager {
       });
     }
 
+    // h4w-helm-indicator: Draw wheel rotation indicator if controlling wheel
+    const isControllingWheel = this.getControllingShip() === ship.id &&
+                               this.getControllingPoint() === 'wheel';
+    if (ship.wheelIndicator) {
+      this.shipRenderer.drawWheelIndicator(
+        ship.wheelIndicator,
+        ship.controlPoints.wheel,
+        ship.sprite,
+        ship.rotation,
+        ship.wheelAngle,
+        isControllingWheel
+      );
+    }
+
     return shipRelativePosition;
   }
 
@@ -523,6 +548,20 @@ export class ShipManager {
         });
       }
 
+      // h4w-helm-indicator: Draw wheel rotation indicator if controlling wheel
+      const isControllingWheel = this.getControllingShip() === ship.id &&
+                                 this.getControllingPoint() === 'wheel';
+      if (ship.wheelIndicator) {
+        this.shipRenderer.drawWheelIndicator(
+          ship.wheelIndicator,
+          ship.controlPoints.wheel,
+          ship.sprite,
+          ship.rotation,
+          ship.wheelAngle,
+          isControllingWheel
+        );
+      }
+
       // Phase 3: Draw health bar above ship
       if (DEBUG_MODE) {
         this.effectsRenderer.drawHealthBar(ship.sprite.x, ship.sprite.y - 40, ship.health, ship.maxHealth);
@@ -593,6 +632,11 @@ export class ShipManager {
       if (ship.cannons) {
         ship.cannons.port.forEach(c => c.sprite.setVisible(isVisible));
         ship.cannons.starboard.forEach(c => c.sprite.setVisible(isVisible));
+      }
+
+      // h4w-helm-indicator: Update wheel indicator visibility
+      if (ship.wheelIndicator) {
+        ship.wheelIndicator.setVisible(isVisible);
       }
     }
   }
