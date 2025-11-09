@@ -618,10 +618,10 @@ export class ShipServer {
       return;
     }
 
-    // Adjust elevation by 0.1° (0.00175 radians) per frame
-    // This is called every frame when key is held, so small increments feel precise
-    // At 60fps: 6°/second, takes ~7.5 seconds to go from 15° to 60° (full range)
-    const elevationStep = Math.PI / 1800; // 0.1° = π/1800
+    // Adjust elevation by 1.0° per message (matches horizontal aim speed)
+    // Client throttles to 50ms (20 messages/second) for network efficiency
+    // At 20 msg/s: 20°/second, takes ~2.25 seconds to go from 15° to 60° (full range)
+    const elevationStep = Math.PI / 180; // 1.0° = π/180
     const delta = adjustment === 'up' ? elevationStep : -elevationStep;
     const newElevation = cannon.elevationAngle + delta;
 
