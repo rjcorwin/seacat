@@ -232,11 +232,8 @@ export class GameScene extends Phaser.Scene {
     const verticalOffset = (borders.top - borders.bottom) / 2;
     camera.setFollowOffset(0, verticalOffset);
 
-    // d7v-diamond-viewport: Calculate and apply camera zoom to fit diamond viewport in window
-    this.updateCameraZoom();
-
-    // d7v-diamond-viewport: Listen for window resize events
-    this.scale.on('resize', this.updateCameraZoom, this);
+    // Set default camera zoom
+    camera.setZoom(Constants.CAMERA.NORMAL_ZOOM);
 
     // Create sound instances BEFORE managers that need them (c5x-ship-combat)
     // Howler.js works in Electron where Phaser's audio loader crashes
