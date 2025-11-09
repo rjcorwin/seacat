@@ -58,9 +58,10 @@ Both methods create files in `client/release/`:
    - Click "Browse" and find your `Seacat-0.1.0.AppImage`
    - Select it and click "Add Selected Programs"
 
-4. **Configure Launch Options** (optional):
-   - Right-click the game in your library → Properties
-   - Add any launch options if needed
+4. **Configure Launch Options** (REQUIRED for Steam):
+   - Right-click the game in your library → Properties → Launch Options
+   - Add: `--no-sandbox`
+   - This fixes Electron sandbox issues when running through Steam
 
 5. **Return to Gaming Mode**:
    - The game will now appear in your library
@@ -84,9 +85,32 @@ The Steam Deck will need network access to your server. Options:
 
 ## Troubleshooting
 
+### Game crashes immediately (Steam spinner then exits)
+
+1. **Run from terminal to see errors**:
+   ```bash
+   # In Desktop Mode, open Konsole
+   cd ~
+   ./Seacat-0.1.0.AppImage
+   ```
+   This will show error messages explaining why it's crashing.
+
+2. **Common issues**:
+   - **Missing FUSE**: `sudo pacman -S fuse2`
+   - **Missing dependencies**: Check error output for missing libraries
+   - **Sandbox issues**: Try running with `--no-sandbox` flag:
+     ```bash
+     ./Seacat-0.1.0.AppImage --no-sandbox
+     ```
+
+3. **Steam Launch Options** (if running from Steam):
+   - Right-click game → Properties → Launch Options
+   - Add: `--no-sandbox` or `--disable-gpu-sandbox`
+
 ### AppImage won't run
 - Make sure you ran `chmod +x` on the file
-- Some systems need FUSE: `sudo pacman -S fuse2` (in Desktop Mode)
+- Install FUSE: `sudo pacman -S fuse2` (in Desktop Mode)
+- Try extracting: `./Seacat-0.1.0.AppImage --appimage-extract` then run `./squashfs-root/AppRun`
 
 ### Can't connect to server
 - Check firewall settings
@@ -97,6 +121,7 @@ The Steam Deck will need network access to your server. Options:
 - Lower the resolution in-game if needed
 - Close other applications
 - Steam Deck works best at 720p or 800p
+- Try disabling GPU acceleration in launch options if graphics are glitchy
 
 ## Building from Steam Deck (Advanced)
 
