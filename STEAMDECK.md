@@ -60,8 +60,19 @@ Both methods create files in `client/release/`:
 
 4. **Configure Launch Options** (REQUIRED for Steam):
    - Right-click the game in your library → Properties → Launch Options
-   - Add: `--no-sandbox`
-   - This fixes Electron sandbox issues when running through Steam
+   - **Minimum:** `--no-sandbox` (fixes Electron sandbox issues)
+   - **With pre-populated connection (recommended for Steam Deck):**
+     ```
+     --no-sandbox --gateway-url=ws://your-server:8080 --space-name=seacat --username=deckplayer --token=your-token-here
+     ```
+   - This pre-fills the connection form so you don't have to type on Steam Deck each time!
+
+   **Launch Options Reference:**
+   - `--no-sandbox` - Required for Steam (fixes crashes)
+   - `--gateway-url=<url>` - Pre-fill gateway URL (e.g., `ws://192.168.1.100:8080`)
+   - `--space-name=<name>` - Pre-fill space name (default: `seacat`)
+   - `--username=<name>` - Pre-fill username (e.g., `deckplayer`)
+   - `--token=<token>` - Pre-fill auth token (get from server tokens directory)
 
 5. **Return to Gaming Mode**:
    - The game will now appear in your library
@@ -73,6 +84,7 @@ The Steam Deck will need network access to your server. Options:
 
 1. **Same Network**: If your server and Steam Deck are on the same WiFi:
    - Use your local IP (e.g., `ws://192.168.1.100:8080`)
+   - Get token from server: `cat server/.mew/tokens/player1.token`
 
 2. **Remote Server**: Host the server on a public machine:
    - Use ngrok or similar to expose the gateway
@@ -82,6 +94,17 @@ The Steam Deck will need network access to your server. Options:
    - Install Node.js on Steam Deck
    - Clone the repo and run the server locally
    - Connect to `ws://localhost:8080`
+
+### Getting Your Auth Token
+
+Tokens are stored on the server in `server/.mew/tokens/`:
+```bash
+# On your server machine
+cd server
+cat .mew/tokens/player1.token
+```
+
+Copy this token and use it in your Steam launch options with `--token=...`
 
 ## Troubleshooting
 

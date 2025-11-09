@@ -14,6 +14,21 @@ const gameContainer = document.getElementById('game-container') as HTMLDivElemen
 const errorMessage = document.getElementById('error-message') as HTMLDivElement;
 const statusDiv = document.getElementById('status') as HTMLDivElement;
 
+// Pre-populate form from URL query parameters (passed from command-line args)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('gatewayUrl')) {
+  (document.getElementById('gateway-url') as HTMLInputElement).value = urlParams.get('gatewayUrl')!;
+}
+if (urlParams.has('spaceName')) {
+  (document.getElementById('space-name') as HTMLInputElement).value = urlParams.get('spaceName')!;
+}
+if (urlParams.has('username')) {
+  (document.getElementById('username') as HTMLInputElement).value = urlParams.get('username')!;
+}
+if (urlParams.has('token')) {
+  (document.getElementById('token') as HTMLInputElement).value = urlParams.get('token')!;
+}
+
 // Handle form submission
 connectionForm.addEventListener('submit', async (e) => {
   e.preventDefault();
