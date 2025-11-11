@@ -72,6 +72,7 @@ export class NetworkClient {
 
   // Setter for state that NetworkClient needs to update
   private setShipRelativePosition: (pos: { x: number; y: number } | null) => void;
+  private setFlyingAsCannonball: (projectileId: string) => void; // h2c-human-cannonball
 
   constructor(
     client: MEWClient,
@@ -84,7 +85,8 @@ export class NetworkClient {
     getTileWidth: () => number,
     getTileHeight: () => number,
     getShipRelativePosition: () => { x: number; y: number } | null,
-    setShipRelativePosition: (pos: { x: number; y: number } | null) => void
+    setShipRelativePosition: (pos: { x: number; y: number } | null) => void,
+    setFlyingAsCannonball: (projectileId: string) => void
   ) {
     this.client = client;
     this.playerId = playerId;
@@ -97,6 +99,7 @@ export class NetworkClient {
     this.getTileHeight = getTileHeight;
     this.getShipRelativePosition = getShipRelativePosition;
     this.setShipRelativePosition = setShipRelativePosition;
+    this.setFlyingAsCannonball = setFlyingAsCannonball;
   }
 
   /**
@@ -153,7 +156,15 @@ export class NetworkClient {
         }
       } else if (envelope.kind === 'game/projectile_spawn') {
         // c5x-ship-combat Phase 2: Handle projectile spawn
+        console.log(`[NetworkClient] Received projectile_spawn:`, envelope.payload);
         this.projectileManager.spawnProjectile(envelope.payload);
+
+        // h2c-human-cannonball: If this is our player's human cannonball, set flying state
+        if (envelope.payload.type === 'human_cannonball' && envelope.payload.playerId === this.playerId) {
+          console.log(`[NetworkClient] DETECTED LOCAL PLAYER HUMAN CANNONBALL: ${envelope.payload.id}`);
+          console.log(`[NetworkClient] My playerId: ${this.playerId}, payload playerId: ${envelope.payload.playerId}`);
+          this.setFlyingAsCannonball(envelope.payload.id);
+        }
       }
     });
   }

@@ -70,7 +70,9 @@ export class ProjectileManager {
       shipRespawn?: Howl;
     },
     private getOnShip: () => string | null,
-    private shipCommands: ShipCommands
+    private shipCommands: ShipCommands,
+    private onHumanCannonballLand?: (landingX: number, landingY: number) => void, // h2c-human-cannonball
+    private localPlayerId?: string // h2c-human-cannonball: to hide local player's projectile sprite
   ) { }
 
   /**
@@ -113,7 +115,16 @@ export class ProjectileManager {
       );
       sprite.setOrigin(0.5, 0.8); // Same as normal player
       sprite.setDepth(100); // Above ships and players
-      console.log(`[GameScene] Created human cannonball sprite for player ${playerId}`);
+
+      // h2c-human-cannonball: Hide sprite if this is the LOCAL player (we use their actual sprite instead)
+      const isLocalPlayer = playerId === this.localPlayerId;
+      if (isLocalPlayer) {
+        sprite.setVisible(false);
+        sprite.setAlpha(0); // Double-ensure it's completely invisible
+        console.log(`[GameScene] ⚠️ Created HIDDEN human cannonball sprite for LOCAL player ${playerId} (localPlayerId: ${this.localPlayerId})`);
+      } else {
+        console.log(`[GameScene] Created human cannonball sprite for remote player ${playerId} (localPlayerId: ${this.localPlayerId})`);
+      }
     } else {
       // Regular cannonball: black circle (8px diameter)
       sprite = this.scene.add.circle(
@@ -138,6 +149,11 @@ export class ProjectileManager {
       0.4 // 40% opacity at ground level
     );
     shadow.setDepth(99); // Just below projectile (depth 100)
+
+    // h2c-human-cannonball: Hide shadow too if this is the local player's projectile
+    if (projectileType === 'human_cannonball' && playerId === this.localPlayerId) {
+      shadow.setVisible(false);
+    }
 
     // Store projectile with 3D physics data (h2c-human-cannonball: added type and playerId)
     const projectile: Projectile = {
@@ -191,6 +207,11 @@ export class ProjectileManager {
       // Check lifetime (safety net)
       const age = Date.now() - proj.spawnTime;
       if (age > this.LIFETIME) {
+        // h2c-human-cannonball: Notify if player landed (use sprite position for screen coordinates)
+        if (proj.type === 'human_cannonball' && this.onHumanCannonballLand) {
+          this.onHumanCannonballLand(proj.sprite.x, proj.sprite.y);
+        }
+
         proj.sprite.destroy();
         proj.shadow.destroy(); // b8s-cannonball-shadows
         this.projectiles.delete(id);
@@ -214,13 +235,16 @@ export class ProjectileManager {
       const screenX = proj.groundX - proj.groundY;
       const screenY = (proj.groundX + proj.groundY) / 2 - proj.heightZ;
 
-      proj.sprite.x = screenX;
-      proj.sprite.y = screenY;
+      // h2c-human-cannonball: Only update sprite position/rotation if visible (skip for local player)
+      if (proj.sprite.visible) {
+        proj.sprite.x = screenX;
+        proj.sprite.y = screenY;
 
-      // h2c-human-cannonball: Rotate player sprite during flight for tumbling effect
-      if (proj.type === 'human_cannonball' && proj.sprite instanceof Phaser.GameObjects.Sprite) {
-        const rotationSpeed = 0.1; // radians per frame (~6 degrees)
-        proj.sprite.rotation += rotationSpeed;
+        // h2c-human-cannonball: Rotate player sprite during flight for tumbling effect
+        if (proj.type === 'human_cannonball' && proj.sprite instanceof Phaser.GameObjects.Sprite) {
+          const rotationSpeed = 0.1; // radians per frame (~6 degrees)
+          proj.sprite.rotation += rotationSpeed;
+        }
       }
 
       // b8s-cannonball-shadows: Update shadow position and appearance based on height
@@ -306,6 +330,11 @@ export class ProjectileManager {
             ship.deckBoundary
           );
 
+          // h2c-human-cannonball: Notify if player landed (on a ship! use sprite position)
+          if (proj.type === 'human_cannonball' && this.onHumanCannonballLand) {
+            this.onHumanCannonballLand(proj.sprite.x, proj.sprite.y);
+          }
+
           // Despawn projectile locally
           proj.sprite.destroy();
           proj.shadow.destroy(); // b8s-cannonball-shadows
@@ -334,6 +363,11 @@ export class ProjectileManager {
 
               // Phase 5: Play water splash sound (c5x-ship-combat)
               this.sounds?.waterSplash?.play();
+
+              // h2c-human-cannonball: Notify if player landed in water (use sprite position)
+              if (proj.type === 'human_cannonball' && this.onHumanCannonballLand) {
+                this.onHumanCannonballLand(proj.sprite.x, proj.sprite.y);
+              }
 
               proj.sprite.destroy();
               proj.shadow.destroy(); // b8s-cannonball-shadows

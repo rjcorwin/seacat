@@ -224,9 +224,20 @@ export class ShipCommands {
     this.setControllingShip(shipId);
     this.setControllingPoint('cannon');
     this.setControllingCannon({ side, index });
-    this.setCurrentCannonAim(0); // Reset aim when grabbing
 
-    console.log(`Grabbed ${side} cannon ${index} on ship ${shipId}`);
+    // Initialize aim to cannon's current angle (h2c-human-cannonball fix)
+    const ship = this.ships.get(shipId);
+    let initialAim = 0; // Default to perpendicular
+    if (ship && ship.cannons) {
+      const cannonArray = side === 'port' ? ship.cannons.port : ship.cannons.starboard;
+      const cannon = cannonArray?.[index];
+      if (cannon && cannon.aimAngle !== undefined) {
+        initialAim = cannon.aimAngle;
+      }
+    }
+    this.setCurrentCannonAim(initialAim);
+
+    console.log(`Grabbed ${side} cannon ${index} on ship ${shipId} (initial aim: ${(initialAim * 180 / Math.PI).toFixed(1)}°)`);
   }
 
   /**
