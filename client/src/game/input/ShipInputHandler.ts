@@ -60,6 +60,7 @@ export class ShipInputHandler {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey: Phaser.Input.Keyboard.Key;
   private spaceKey: Phaser.Input.Keyboard.Key;
+  private humanCannonballKey: Phaser.Input.Keyboard.Key; // h2c-human-cannonball: F key
   private gamepad: (() => Phaser.Input.Gamepad.Gamepad | null) | null = null; // g4p Phase 1
 
   // Control state
@@ -91,7 +92,8 @@ export class ShipInputHandler {
     playerId: string,
     cursors: Phaser.Types.Input.Keyboard.CursorKeys,
     interactKey: Phaser.Input.Keyboard.Key,
-    spaceKey: Phaser.Input.Keyboard.Key
+    spaceKey: Phaser.Input.Keyboard.Key,
+    humanCannonballKey: Phaser.Input.Keyboard.Key // h2c-human-cannonball
   ) {
     this.scene = scene;
     this.ships = ships;
@@ -101,6 +103,7 @@ export class ShipInputHandler {
     this.cursors = cursors;
     this.interactKey = interactKey;
     this.spaceKey = spaceKey;
+    this.humanCannonballKey = humanCannonballKey; // h2c-human-cannonball
   }
 
   /**
@@ -486,6 +489,47 @@ export class ShipInputHandler {
       }
     }
 
+    // Handle F key for human cannonball launch (h2c-human-cannonball Phase 1)
+    if (Phaser.Input.Keyboard.JustDown(this.humanCannonballKey)) {
+      // Only allow launch if:
+      // - Player IS controlling a cannon (not just near it)
+      if (this.controllingPoint === 'cannon' && this.controllingShip && this.controllingCannon) {
+        // Use local aim angle (this.currentCannonAim) since it's more up-to-date than ship state
+        // Get elevation angle from ship state (we don't track it locally)
+        const ship = (this.scene as any).getShips().get(this.controllingShip);
+        if (ship && ship.cannons) {
+          const cannonArray = this.controllingCannon.side === 'port' ? ship.cannons.port : ship.cannons.starboard;
+          const cannon = cannonArray?.[this.controllingCannon.index];
+
+          if (cannon) {
+            const aimAngle = this.currentCannonAim; // Use local aim for responsiveness
+            const elevationAngle = cannon.elevationAngle; // Use server's elevation
+
+            console.log(`[Human Cannonball] Loading player into ${this.controllingCannon.side} cannon ${this.controllingCannon.index} with aim: ${aimAngle}, elevation: ${elevationAngle}!`);
+
+            this.shipCommands.loadHumanCannonball(
+              this.controllingShip,
+              this.controllingCannon.side,
+              this.controllingCannon.index,
+              aimAngle,
+              elevationAngle
+            );
+
+            // Automatically release the cannon after launching
+            this.shipCommands.releaseCannon(
+              this.controllingShip,
+              this.controllingCannon.side,
+              this.controllingCannon.index
+            );
+            this.controllingShip = null;
+            this.controllingPoint = null;
+            this.controllingCannon = null;
+            console.log(`[Human Cannonball] Released cannon control after launch`);
+          }
+        }
+      }
+    }
+
     // Handle ship control inputs (when controlling wheel or sails) (g4p Phase 1: keyboard + gamepad)
     if (this.controllingShip && this.controllingPoint) {
       if (this.controllingPoint === 'wheel') {
@@ -568,6 +612,35 @@ export class ShipInputHandler {
           );
         }
       }
+    }
+
+    // h2c-human-cannonball Phase 2: Show trajectory preview when controlling cannon
+    if (this.controllingPoint === 'cannon' && this.controllingShip && this.controllingCannon) {
+      const ship = (this.scene as any).getShips().get(this.controllingShip);
+      if (ship && ship.cannons) {
+        const cannonArray = this.controllingCannon.side === 'port' ? ship.cannons.port : ship.cannons.starboard;
+        const cannon = cannonArray?.[this.controllingCannon.index];
+
+        if (cannon && cannon.worldPosition) {
+          // Calculate spawn position (cannon world position)
+          const spawnX = cannon.worldPosition.x;
+          const spawnY = cannon.worldPosition.y;
+          const spawnZ = 40; // Deck height (same as server DECK_HEIGHT)
+
+          // Show trajectory with LOCAL aim (for responsiveness) and server elevation
+          (this.scene as any).showTrajectoryPreview(
+            spawnX,
+            spawnY,
+            spawnZ,
+            this.currentCannonAim, // Use local aim for instant feedback
+            cannon.elevationAngle, // Use server's elevation
+            ship.rotation
+          );
+        }
+      }
+    } else {
+      // Not controlling cannon - hide trajectory
+      (this.scene as any).hideTrajectoryPreview();
     }
   }
 }

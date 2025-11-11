@@ -166,10 +166,11 @@ export interface Ship {
  * Projectile entity managed by the game (c5x-ship-combat Phase 2)
  * Updated to use 3D physics (p2v-projectile-velocity Option 2)
  * Updated to include shadows (b8s-cannonball-shadows)
+ * Updated to support human cannonball (h2c-human-cannonball)
  */
 export interface Projectile {
   id: string;
-  sprite: Phaser.GameObjects.Arc;
+  sprite: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite; // Arc for cannonball, Sprite for human cannonball
   shadow: Phaser.GameObjects.Ellipse; // Ground-level shadow (b8s-cannonball-shadows)
 
   // Ground position and velocity (horizontal movement on isometric map)
@@ -185,6 +186,10 @@ export interface Projectile {
   spawnTime: number;
   sourceShip: string;
   minFlightTime: number; // Minimum ms before water collision can trigger (prevents instant despawn from deck-level firing)
+
+  // h2c-human-cannonball: Additional fields for human cannonball type
+  type?: 'cannonball' | 'human_cannonball';
+  playerId?: string; // Player ID for human cannonball projectiles
 }
 
 /**

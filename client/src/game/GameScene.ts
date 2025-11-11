@@ -15,6 +15,7 @@ import { PlayerRenderer } from './rendering/PlayerRenderer.js';
 import { ShipRenderer } from './rendering/ShipRenderer.js';
 import { ViewportRenderer } from './rendering/ViewportRenderer.js';
 import { ShimmerRenderer } from './rendering/ShimmerRenderer.js';
+import { TrajectoryPreviewRenderer } from './rendering/TrajectoryPreviewRenderer.js'; // h2c-human-cannonball Phase 2
 import { ViewportManager } from './utils/ViewportManager.js';
 import { ShipCommands } from './network/ShipCommands.js';
 import { NetworkClient } from './network/NetworkClient.js';
@@ -45,6 +46,7 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  private humanCannonballKey!: Phaser.Input.Keyboard.Key; // h2c-human-cannonball: F key for loading into cannon
   private map!: Phaser.Tilemaps.Tilemap;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
   private secondLayer?: Phaser.Tilemaps.TilemapLayer;
@@ -68,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private shipRenderer!: ShipRenderer;
   private viewportRenderer!: ViewportRenderer; // d7v-diamond-viewport
   private shimmerRenderer!: ShimmerRenderer; // Animated shimmer particles
+  private trajectoryPreviewRenderer!: TrajectoryPreviewRenderer; // h2c-human-cannonball Phase 2
 
   // Network & Input
   private shipCommands!: ShipCommands;
@@ -80,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private shipRelativePosition: { x: number; y: number } | null = null; // Position relative to ship center
   private applyingShipRotation = false; // Flag to prevent overwriting rotated position
   private isInCrowsNest = false; // Track if player is in crow's nest (controls viewport size - c9v)
+  private flyingAsCannonball: string | null = null; // Track if player is flying (projectile ID) (h2c-human-cannonball)
 
   // Phase 5: Sound effect instances using Howler.js (c5x-ship-combat)
   private sounds!: {
@@ -203,6 +207,7 @@ export class GameScene extends Phaser.Scene {
     this.viewportRenderer.initialize();
     this.shimmerRenderer = new ShimmerRenderer(this); // Animated shimmer particles
     this.shimmerRenderer.initialize();
+    this.trajectoryPreviewRenderer = new TrajectoryPreviewRenderer(this); // h2c-human-cannonball Phase 2
 
     // Create 8-direction walk animations
     this.playerRenderer.createPlayerAnimations();
@@ -211,6 +216,7 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.humanCannonballKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F); // h2c-human-cannonball
 
     // Create local player sprite BEFORE input handlers need it
     const centerX = (10 - 10) * (TILE_WIDTH / 2); // = 0
@@ -299,7 +305,8 @@ export class GameScene extends Phaser.Scene {
       this.playerId,
       this.cursors,
       this.interactKey,
-      this.spaceKey
+      this.spaceKey,
+      this.humanCannonballKey // h2c-human-cannonball
     );
 
     // Initialize ship commands (uses shipInputHandler callbacks)
@@ -331,7 +338,9 @@ export class GameScene extends Phaser.Scene {
       this.effectsRenderer,
       this.sounds,
       () => this.onShip,
-      this.shipCommands
+      this.shipCommands,
+      (landingX, landingY) => { this.clearFlyingAsCannonball(landingX, landingY); },
+      this.playerId // h2c-human-cannonball: pass local player ID to hide their projectile sprite
     );
     this.shipManager = new ShipManager(
       this,
@@ -380,7 +389,8 @@ export class GameScene extends Phaser.Scene {
       () => TILE_WIDTH,
       () => TILE_HEIGHT,
       () => this.shipRelativePosition,
-      (pos) => { this.shipRelativePosition = pos; }
+      (pos) => { this.shipRelativePosition = pos; },
+      (projectileId) => { this.setFlyingAsCannonball(projectileId); }
     );
 
     // Initialize network communication
@@ -401,13 +411,28 @@ export class GameScene extends Phaser.Scene {
     this.shimmerRenderer.update(time); // Animate shimmer particles
     this.playerInputHandler.updatePlayerDepth();
 
-    // Local player input & movement
-    const velocity = this.playerInputHandler.handleMovement(
-      delta,
-      this.shipInputHandler.getControllingShip() !== null,
-      this.onShip
-    );
-    this.playerInputHandler.applyWaveBobbing(time, this.onShip);
+    // h2c-human-cannonball: If flying, sync player position to projectile
+    let velocity: Phaser.Math.Vector2;
+    if (this.flyingAsCannonball) {
+      const projectile = this.projectiles.get(this.flyingAsCannonball);
+      if (projectile) {
+        // Sync local player position to projectile's SPRITE position (includes height offset!)
+        this.localPlayer.setPosition(projectile.sprite.x, projectile.sprite.y);
+        velocity = new Phaser.Math.Vector2(projectile.groundVx, projectile.groundVy);
+        console.log(`[Flying] Player synced to projectile sprite at (${projectile.sprite.x.toFixed(1)}, ${projectile.sprite.y.toFixed(1)})`);
+      } else {
+        console.log(`[Flying] ERROR: Projectile ${this.flyingAsCannonball} not found in map!`);
+        velocity = new Phaser.Math.Vector2(0, 0);
+      }
+    } else {
+      // Local player input & movement (only when not flying)
+      velocity = this.playerInputHandler.handleMovement(
+        delta,
+        this.shipInputHandler.getControllingShip() !== null,
+        this.onShip
+      );
+      this.playerInputHandler.applyWaveBobbing(time, this.onShip);
+    }
 
     // Network
     this.networkClient.update(time, velocity);
@@ -454,6 +479,82 @@ export class GameScene extends Phaser.Scene {
    */
   public getIsInCrowsNest(): boolean {
     return this.isInCrowsNest;
+  }
+
+  /**
+   * Get ships map (for ShipInputHandler to access cannon state)
+   * @returns Map of ship IDs to Ship objects
+   */
+  public getShips(): Map<string, Ship> {
+    return this.ships;
+  }
+
+  /**
+   * Set flying state for human cannonball (h2c-human-cannonball)
+   * @param projectileId - ID of the human cannonball projectile
+   */
+  public setFlyingAsCannonball(projectileId: string): void {
+    this.flyingAsCannonball = projectileId;
+    console.log(`[GameScene] FLYING STATE SET! Player is now flying as projectile: ${projectileId}`);
+    console.log(`[GameScene] Current projectiles in map: ${Array.from(this.projectiles.keys()).join(', ')}`);
+  }
+
+  /**
+   * Clear flying state and set player position to landing point (h2c-human-cannonball)
+   * @param landingX - X coordinate where player lands
+   * @param landingY - Y coordinate where player lands
+   */
+  public clearFlyingAsCannonball(landingX: number, landingY: number): void {
+    if (this.flyingAsCannonball) {
+      console.log(`[Human Cannonball] Player landed at (${landingX}, ${landingY})`);
+      this.flyingAsCannonball = null;
+      this.localPlayer.setPosition(landingX, landingY);
+      // Reset ship state since player likely left the ship
+      this.onShip = null;
+      this.shipRelativePosition = null;
+    }
+  }
+
+  /**
+   * Check if player is currently flying as a human cannonball
+   * @returns Projectile ID if flying, null otherwise
+   */
+  public getFlyingAsCannonball(): string | null {
+    return this.flyingAsCannonball;
+  }
+
+  /**
+   * Show trajectory preview for human cannonball (h2c-human-cannonball Phase 2)
+   * @param spawnX - World X position where cannonball spawns
+   * @param spawnY - World Y position where cannonball spawns
+   * @param spawnZ - Height Z where cannonball spawns
+   * @param aimAngle - Horizontal aim angle (radians)
+   * @param elevationAngle - Vertical aim angle (radians)
+   * @param shipRotation - Ship's current rotation (radians)
+   */
+  public showTrajectoryPreview(
+    spawnX: number,
+    spawnY: number,
+    spawnZ: number,
+    aimAngle: number,
+    elevationAngle: number,
+    shipRotation: number
+  ): void {
+    this.trajectoryPreviewRenderer.showTrajectory(
+      spawnX,
+      spawnY,
+      spawnZ,
+      aimAngle,
+      elevationAngle,
+      shipRotation
+    );
+  }
+
+  /**
+   * Hide trajectory preview (h2c-human-cannonball Phase 2)
+   */
+  public hideTrajectoryPreview(): void {
+    this.trajectoryPreviewRenderer.hideTrajectory();
   }
 
   private checkShipBoundary() {
