@@ -20,6 +20,7 @@ import {
   AimCannonPayload,
   AdjustElevationPayload,
   FireCannonPayload,
+  LoadHumanCannonballPayload,
 } from './types.js';
 
 export interface ShipParticipantConfig {
@@ -119,6 +120,10 @@ export class ShipParticipant {
 
         case 'ship/fire_cannon':
           this.handleFireCannon(envelope.payload as FireCannonPayload);
+          break;
+
+        case 'ship/load_human_cannonball':
+          this.handleLoadHumanCannonball(envelope.payload as LoadHumanCannonballPayload);
           break;
 
         case 'game/projectile_hit_claim':
@@ -223,6 +228,38 @@ export class ShipParticipant {
         },
       });
       console.log(`[ShipParticipant] Broadcasted projectile spawn: ${projectile.id}`);
+    }
+
+    // Broadcast updated state (includes updated cooldown)
+    this.broadcastPosition();
+  }
+
+  private handleLoadHumanCannonball(payload: LoadHumanCannonballPayload) {
+    console.log(`[ShipParticipant] Received load_human_cannonball message:`, payload);
+    const projectile = this.server.loadHumanCannonball(
+      payload.playerId,
+      payload.side,
+      payload.index,
+      payload.aimAngle,
+      payload.elevationAngle
+    );
+
+    // Broadcast projectile spawn if successfully loaded (h2c-human-cannonball)
+    if (projectile) {
+      this.client.send({
+        kind: 'game/projectile_spawn',
+        to: [], // Broadcast to all
+        payload: {
+          id: projectile.id,
+          type: 'human_cannonball',
+          playerId: projectile.playerId,
+          sourceShip: projectile.sourceShip,
+          position: projectile.spawnPosition,
+          velocity: projectile.initialVelocity,
+          timestamp: projectile.spawnTime,
+        },
+      });
+      console.log(`[ShipParticipant] Broadcasted human cannonball spawn: ${projectile.id}`);
     }
 
     // Broadcast updated state (includes updated cooldown)

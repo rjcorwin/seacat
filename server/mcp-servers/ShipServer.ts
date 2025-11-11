@@ -762,6 +762,134 @@ export class ShipServer {
     return projectile;
   }
 
+  /**
+   * Load player into cannon for human cannonball launch (h2c-human-cannonball)
+   * Similar to fireCannon but uses custom aim/elevation and launches player
+   */
+  public loadHumanCannonball(
+    playerId: string,
+    side: 'port' | 'starboard',
+    index: number,
+    aimAngle: number,
+    elevationAngle: number
+  ): import('./types.js').Projectile | null {
+    const cannons = this.state.cannons[side];
+    if (index < 0 || index >= cannons.length) {
+      console.error(`Invalid cannon index: ${side} ${index}`);
+      return null;
+    }
+
+    const cannon = cannons[index];
+
+    // Check cooldown
+    const now = Date.now();
+    if (cannon.cooldownRemaining > 0) {
+      console.error(`Cannon ${side} ${index} on cooldown (${cannon.cooldownRemaining}ms remaining)`);
+      return null;
+    }
+
+    // Launch the player!
+    cannon.lastFired = now;
+    cannon.cooldownRemaining = this.config.cannonCooldownMs;
+
+    console.log(`Player ${playerId} loading into cannon ${side} ${index} for human cannonball launch!`);
+    console.log(`  Cooldown set to: ${cannon.cooldownRemaining}ms`);
+
+    // Calculate projectile spawn parameters (same as fireCannon)
+    // 1. Calculate cannon world position using isometric rotation
+    const rotated = this.rotatePointIsometric(cannon.relativePosition, this.state.rotation);
+    const spawnPos: Position = {
+      x: this.state.position.x + rotated.x,
+      y: this.state.position.y + rotated.y,
+    };
+
+    // 2. Calculate fire direction (horizontal component)
+    const isPort = side === 'port';
+    const perpendicular = this.state.rotation + (isPort ? -Math.PI / 2 : Math.PI / 2);
+    const fireAngle = perpendicular + aimAngle; // Use provided aim angle
+
+    console.log(`[HUMAN CANNONBALL] Ship rotation: ${(this.state.rotation * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`[HUMAN CANNONBALL] Side: ${side}, Perpendicular: ${(perpendicular * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`[HUMAN CANNONBALL] Aim angle: ${(aimAngle * 180 / Math.PI).toFixed(1)}°, Fire angle: ${(fireAngle * 180 / Math.PI).toFixed(1)}°`);
+
+    // 3. Calculate velocity with elevation (h2c: Use 450 px/s for dramatic launches)
+    const HUMAN_CANNONBALL_SPEED = 450; // px/s (1.5x cannonball speed)
+    const elevation = elevationAngle; // Use provided elevation angle
+
+    // Horizontal speed (in the XY plane) = HUMAN_CANNONBALL_SPEED * cos(elevation)
+    const horizontalSpeed = HUMAN_CANNONBALL_SPEED * Math.cos(elevation);
+
+    // Vertical component (upward, negative Y in screen space) = HUMAN_CANNONBALL_SPEED * sin(elevation)
+    const verticalComponent = HUMAN_CANNONBALL_SPEED * Math.sin(elevation);
+
+    // TRUE 3D ISOMETRIC PHYSICS (same as cannonballs)
+    // Convert screen-space fireAngle to ground-space azimuth
+    const cos_fire = Math.cos(fireAngle);
+    const sin_fire = Math.sin(fireAngle);
+
+    // Transform screen direction to ground direction using isometric projection inverse
+    const cos_azimuth_unnorm = cos_fire + 2 * sin_fire;
+    const sin_azimuth_unnorm = 2 * sin_fire - cos_fire;
+
+    // Normalize to unit vector
+    const azimuth_norm = Math.sqrt(
+      cos_azimuth_unnorm * cos_azimuth_unnorm +
+      sin_azimuth_unnorm * sin_azimuth_unnorm
+    );
+    const cos_azimuth = cos_azimuth_unnorm / azimuth_norm;
+    const sin_azimuth = sin_azimuth_unnorm / azimuth_norm;
+
+    // Calculate 3D velocity in ground-space
+    const groundVx = horizontalSpeed * cos_azimuth;
+    const groundVy = horizontalSpeed * sin_azimuth;
+    const heightVz = verticalComponent; // Positive = upward
+
+    // Inherit ship's ground velocity (moving platform physics)
+    const vel: import('./types.js').Velocity3D = {
+      groundVx: groundVx + this.state.velocity.x,
+      groundVy: groundVy + this.state.velocity.y,
+      heightVz: heightVz,
+    };
+
+    const totalGroundSpeed = Math.sqrt(groundVx * groundVx + groundVy * groundVy);
+
+    console.log(`[HUMAN CANNONBALL] ========== 3D BALLISTIC VELOCITY ==========`);
+    console.log(`[HUMAN CANNONBALL] Elevation angle: ${(elevation * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`[HUMAN CANNONBALL] Fire angle (screen): ${(fireAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`[HUMAN CANNONBALL] Horizontal speed: ${horizontalSpeed.toFixed(1)}`);
+    console.log(`[HUMAN CANNONBALL] Ground velocity: (${groundVx.toFixed(1)}, ${groundVy.toFixed(1)}) | magnitude: ${totalGroundSpeed.toFixed(1)}`);
+    console.log(`[HUMAN CANNONBALL] Height velocity: ${heightVz.toFixed(1)}`);
+    console.log(`[HUMAN CANNONBALL] Final 3D velocity: ground(${vel.groundVx.toFixed(1)}, ${vel.groundVy.toFixed(1)}), height ${vel.heightVz.toFixed(1)}`);
+
+    // 4. Generate unique projectile ID
+    const projectileId = `${this.state.participantId}-human-${playerId}-${now}`;
+
+    // 5. Create projectile object with human cannonball type
+    const projectile: import('./types.js').Projectile = {
+      id: projectileId,
+      sourceShip: this.state.participantId,
+      spawnTime: now,
+      spawnPosition: spawnPos,
+      initialVelocity: vel,
+      type: 'human_cannonball',
+      playerId: playerId,
+    };
+
+    // 6. Store in active projectiles (for future landing validation)
+    this.activeProjectiles.set(projectileId, projectile);
+
+    // 7. Auto-cleanup after 6 seconds (human cannonballs fly farther)
+    setTimeout(() => {
+      this.activeProjectiles.delete(projectileId);
+      console.log(`Human cannonball projectile ${projectileId} expired (6s lifetime)`);
+    }, 6000);
+
+    console.log(`  Human cannonball projectile spawned at (${spawnPos.x.toFixed(1)}, ${spawnPos.y.toFixed(1)})`);
+    console.log(`  Player: ${playerId}`);
+
+    return projectile;
+  }
+
   private releaseControlByPlayer(playerId: string) {
     // Release wheel if controlled
     if (this.state.controlPoints.wheel.controlledBy === playerId) {

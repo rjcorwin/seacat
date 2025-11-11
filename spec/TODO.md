@@ -13,6 +13,7 @@
 - [ ] When selected a grab point, move character to a default point for that grab point. Plus adjustments for grab points.
 - [ ] fade in of tiles on movement, the border that is fading in, i think it's 3 rows deep, let's switch to 2 with the inside tile very close to not transparent to clean things up, less blury at the edges when moving.
 - [ ] Only fade water tiles, keep other tiles always in.
+- [x] Ability to load one-self into cannon, and fire one-self out of said cannon (proposal: h2c-human-cannonball)
 - [ ] sprite: cannons, and sail lines to ship sprite
 
 ## phase 2 - advanced ships

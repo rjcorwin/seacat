@@ -75,10 +75,11 @@ export class ProjectileManager {
 
   /**
    * Spawn a projectile from a cannon (c5x-ship-combat Phase 2)
+   * Updated to support human cannonball (h2c-human-cannonball)
    * @param payload Spawn payload from server
    */
   spawnProjectile(payload: any): void {
-    const { id, position, velocity, timestamp, sourceShip } = payload;
+    const { id, position, velocity, timestamp, sourceShip, type, playerId } = payload;
 
     // Check for duplicate (idempotency)
     if (this.projectiles.has(id)) {
@@ -93,20 +94,37 @@ export class ProjectileManager {
     const spawnGroundX = position.x / 2 + position.y + spawnHeightZ;
     const spawnGroundY = position.y - position.x / 2 + spawnHeightZ;
 
-    console.log(`[GameScene] Spawning projectile ${id} at screen(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`);
+    const projectileType = type || 'cannonball'; // Default to cannonball for backwards compatibility
+
+    console.log(`[GameScene] Spawning ${projectileType} ${id} at screen(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`);
     console.log(`  Ground position: (${spawnGroundX.toFixed(1)}, ${spawnGroundY.toFixed(1)}), height ${spawnHeightZ.toFixed(1)}`);
     console.log(`  Ground velocity: (${velocity.groundVx.toFixed(1)}, ${velocity.groundVy.toFixed(1)}) px/s`);
     console.log(`  Height velocity: ${velocity.heightVz.toFixed(1)} px/s`);
 
-    // Create cannonball sprite (black circle, 8px diameter)
-    const sprite = this.scene.add.circle(
-      position.x,
-      position.y,
-      4, // radius = 4px (8px diameter)
-      0x222222, // Dark gray/black
-      1.0 // Full opacity
-    );
-    sprite.setDepth(100); // Above ships and players
+    // Create sprite based on projectile type (h2c-human-cannonball)
+    let sprite: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite;
+
+    if (projectileType === 'human_cannonball') {
+      // Human cannonball: use player sprite
+      sprite = this.scene.add.sprite(
+        position.x,
+        position.y,
+        'player' // Use existing player sprite sheet
+      );
+      sprite.setOrigin(0.5, 0.8); // Same as normal player
+      sprite.setDepth(100); // Above ships and players
+      console.log(`[GameScene] Created human cannonball sprite for player ${playerId}`);
+    } else {
+      // Regular cannonball: black circle (8px diameter)
+      sprite = this.scene.add.circle(
+        position.x,
+        position.y,
+        4, // radius = 4px (8px diameter)
+        0x222222, // Dark gray/black
+        1.0 // Full opacity
+      );
+      sprite.setDepth(100); // Above ships and players
+    }
 
     // b8s-cannonball-shadows: Create shadow ellipse at ground level
     const shadowScreenX = spawnGroundX - spawnGroundY;
@@ -121,7 +139,7 @@ export class ProjectileManager {
     );
     shadow.setDepth(99); // Just below projectile (depth 100)
 
-    // Store projectile with 3D physics data
+    // Store projectile with 3D physics data (h2c-human-cannonball: added type and playerId)
     const projectile: Projectile = {
       id,
       sprite,
@@ -140,6 +158,10 @@ export class ProjectileManager {
       spawnTime: timestamp,
       sourceShip,
       minFlightTime: 200, // 200ms grace period before water collision check (prevents instant despawn from deck-level shots)
+
+      // h2c-human-cannonball: Projectile type and player ID
+      type: projectileType,
+      playerId: playerId,
     };
 
     this.projectiles.set(id, projectile);
@@ -194,6 +216,12 @@ export class ProjectileManager {
 
       proj.sprite.x = screenX;
       proj.sprite.y = screenY;
+
+      // h2c-human-cannonball: Rotate player sprite during flight for tumbling effect
+      if (proj.type === 'human_cannonball' && proj.sprite instanceof Phaser.GameObjects.Sprite) {
+        const rotationSpeed = 0.1; // radians per frame (~6 degrees)
+        proj.sprite.rotation += rotationSpeed;
+      }
 
       // b8s-cannonball-shadows: Update shadow position and appearance based on height
       const shadowScreenX = proj.groundX - proj.groundY;

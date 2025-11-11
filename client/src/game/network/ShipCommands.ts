@@ -296,6 +296,31 @@ export class ShipCommands {
   }
 
   /**
+   * Load player into cannon for human cannonball launch (h2c-human-cannonball)
+   */
+  loadHumanCannonball(
+    shipId: string,
+    side: 'port' | 'starboard',
+    index: number,
+    aimAngle: number,
+    elevationAngle: number
+  ): void {
+    this.client.send({
+      kind: 'ship/load_human_cannonball',
+      to: [shipId],
+      payload: {
+        playerId: this.playerId,
+        side,
+        index,
+        aimAngle,
+        elevationAngle,
+      },
+    });
+
+    console.log(`Loading player into ${side} cannon ${index} for launch!`);
+  }
+
+  /**
    * Send projectile hit claim to SOURCE ship for validation
    * The source ship owns the projectile and can validate physics.
    * If valid, it will apply damage to the target ship.

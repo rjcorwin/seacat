@@ -45,6 +45,7 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  private humanCannonballKey!: Phaser.Input.Keyboard.Key; // h2c-human-cannonball: F key for loading into cannon
   private map!: Phaser.Tilemaps.Tilemap;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
   private secondLayer?: Phaser.Tilemaps.TilemapLayer;
@@ -211,6 +212,7 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.humanCannonballKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F); // h2c-human-cannonball
 
     // Create local player sprite BEFORE input handlers need it
     const centerX = (10 - 10) * (TILE_WIDTH / 2); // = 0
@@ -299,7 +301,8 @@ export class GameScene extends Phaser.Scene {
       this.playerId,
       this.cursors,
       this.interactKey,
-      this.spaceKey
+      this.spaceKey,
+      this.humanCannonballKey // h2c-human-cannonball
     );
 
     // Initialize ship commands (uses shipInputHandler callbacks)

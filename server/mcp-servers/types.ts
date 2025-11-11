@@ -201,8 +201,20 @@ export interface FireCannonPayload {
 }
 
 /**
+ * Payload for loading player into cannon (h2c-human-cannonball)
+ */
+export interface LoadHumanCannonballPayload {
+  playerId: string;
+  side: 'port' | 'starboard';
+  index: number;
+  aimAngle: number; // Horizontal aim in radians
+  elevationAngle: number; // Vertical elevation in radians
+}
+
+/**
  * Projectile data (c5x-ship-combat Phase 2)
  * Updated to use 3D velocity (p2v-projectile-velocity)
+ * Updated to support human cannonball (h2c-human-cannonball)
  */
 export interface Projectile {
   id: string;
@@ -210,6 +222,8 @@ export interface Projectile {
   spawnTime: number;
   spawnPosition: Position;
   initialVelocity: Velocity3D; // Changed from Velocity to Velocity3D
+  type?: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball
+  playerId?: string; // h2c-human-cannonball: Player ID for human cannonball projectiles
 }
 
 /**

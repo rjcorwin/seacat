@@ -60,6 +60,7 @@ export class ShipInputHandler {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey: Phaser.Input.Keyboard.Key;
   private spaceKey: Phaser.Input.Keyboard.Key;
+  private humanCannonballKey: Phaser.Input.Keyboard.Key; // h2c-human-cannonball: F key
   private gamepad: (() => Phaser.Input.Gamepad.Gamepad | null) | null = null; // g4p Phase 1
 
   // Control state
@@ -91,7 +92,8 @@ export class ShipInputHandler {
     playerId: string,
     cursors: Phaser.Types.Input.Keyboard.CursorKeys,
     interactKey: Phaser.Input.Keyboard.Key,
-    spaceKey: Phaser.Input.Keyboard.Key
+    spaceKey: Phaser.Input.Keyboard.Key,
+    humanCannonballKey: Phaser.Input.Keyboard.Key // h2c-human-cannonball
   ) {
     this.scene = scene;
     this.ships = ships;
@@ -101,6 +103,7 @@ export class ShipInputHandler {
     this.cursors = cursors;
     this.interactKey = interactKey;
     this.spaceKey = spaceKey;
+    this.humanCannonballKey = humanCannonballKey; // h2c-human-cannonball
   }
 
   /**
@@ -483,6 +486,29 @@ export class ShipInputHandler {
           // Grab wheel, sails, or mast
           this.shipCommands.grabControl(nearestControlPoint.shipId, nearestControlPoint.controlPoint as 'wheel' | 'sails' | 'mast');
         }
+      }
+    }
+
+    // Handle F key for human cannonball launch (h2c-human-cannonball Phase 1)
+    if (Phaser.Input.Keyboard.JustDown(this.humanCannonballKey)) {
+      // Only allow launch if:
+      // - Player is NOT controlling any control point
+      // - Player is near a cannon
+      if (!this.controllingPoint && nearestControlPoint && nearestControlPoint.controlPoint === 'cannon' &&
+          nearestControlPoint.cannonSide !== undefined && nearestControlPoint.cannonIndex !== undefined) {
+        // Launch with default aim (perpendicular to ship, 45° elevation)
+        const defaultAimAngle = 0; // Perpendicular to ship
+        const defaultElevationAngle = Math.PI / 4; // 45 degrees
+
+        console.log(`[Human Cannonball] Loading player into ${nearestControlPoint.cannonSide} cannon ${nearestControlPoint.cannonIndex}!`);
+
+        this.shipCommands.loadHumanCannonball(
+          nearestControlPoint.shipId,
+          nearestControlPoint.cannonSide,
+          nearestControlPoint.cannonIndex,
+          defaultAimAngle,
+          defaultElevationAngle
+        );
       }
     }
 

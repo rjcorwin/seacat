@@ -54,6 +54,11 @@ export const ISO_SOUTHEAST = { x: ISO_X_AXIS.x / isoXLength, y: ISO_X_AXIS.y / i
 export const ISO_SOUTHWEST = { x: -ISO_NORTHEAST.x, y: -ISO_NORTHEAST.y };
 export const ISO_NORTHWEST = { x: -ISO_SOUTHEAST.x, y: -ISO_SOUTHEAST.y };
 
+// Human Cannonball (h2c-human-cannonball)
+export const HUMAN_CANNONBALL_SPEED = 450; // px/s (1.5x cannonball speed for dramatic launches)
+export const HUMAN_CANNONBALL_LIFETIME = 6000; // ms (longer than cannonball due to longer range)
+export const TRAJECTORY_PREVIEW_SAMPLES = 25; // Number of dots in trajectory arc preview
+
 // Viewport configuration (d7v-diamond-viewport, c9v-crowsnest-viewport)
 export const VIEWPORT = {
   // Square diamond viewport (rotated 45°)
