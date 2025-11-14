@@ -40,7 +40,7 @@ participants:
       SHIP_ID: "ship1"
       SPACE_NAME: "seacat"
       GATEWAY_URL: "ws://localhost:8080"
-      SHIP_START_X: "200"
+      SHIP_START_X: "100"
       SHIP_START_Y: "200"
       SHIP_START_HEADING: "east"
       TOKEN_PATH: ".mew/tokens/ship1.token"

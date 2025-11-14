@@ -45,6 +45,7 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  private tabKey!: Phaser.Input.Keyboard.Key;
   private map!: Phaser.Tilemaps.Tilemap;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
   private secondLayer?: Phaser.Tilemaps.TilemapLayer;
@@ -80,6 +81,8 @@ export class GameScene extends Phaser.Scene {
   private shipRelativePosition: { x: number; y: number } | null = null; // Position relative to ship center
   private applyingShipRotation = false; // Flag to prevent overwriting rotated position
   private isInCrowsNest = false; // Track if player is in crow's nest (controls viewport size - c9v)
+  private flyingAsProjectile = false; // h2c-human-cannonball Phase 3: Track if local player is flying
+  private flyingProjectileId: string | null = null; // h2c-human-cannonball Phase 3: Track projectile ID
 
   // Phase 5: Sound effect instances using Howler.js (c5x-ship-combat)
   private sounds!: {
@@ -211,6 +214,7 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.tabKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TAB);
 
     // Create local player sprite BEFORE input handlers need it
     const centerX = (10 - 10) * (TILE_WIDTH / 2); // = 0
@@ -299,7 +303,8 @@ export class GameScene extends Phaser.Scene {
       this.playerId,
       this.cursors,
       this.interactKey,
-      this.spaceKey
+      this.spaceKey,
+      this.tabKey
     );
 
     // Initialize ship commands (uses shipInputHandler callbacks)
@@ -386,6 +391,64 @@ export class GameScene extends Phaser.Scene {
     // Initialize network communication
     this.networkClient.initialize();
 
+    // Listen for human cannonball landing (h2c-human-cannonball Phase 2-4)
+    this.events.on('player-landed', (data: any) => {
+      if (data.playerId === this.playerId) {
+        // Local player landed - teleport and show sprite
+        console.log(`[GameScene] Local player landed at screen(${data.screenX.toFixed(1)}, ${data.screenY.toFixed(1)})`);
+        this.localPlayer.setPosition(data.screenX, data.screenY);
+        this.localPlayer.setVisible(true);
+
+        // Phase 3: Stop flying, camera returns to player
+        this.flyingAsProjectile = false;
+        this.flyingProjectileId = null;
+
+        // Phase 4: If landed on ship, update onShip state
+        if (data.onShip && data.shipRelativePosition) {
+          console.log(`[GameScene] Player boarded ship ${data.onShip} at relative position (${data.shipRelativePosition.x.toFixed(1)}, ${data.shipRelativePosition.y.toFixed(1)})`);
+          this.onShip = data.onShip;
+          this.shipRelativePosition = data.shipRelativePosition;
+        } else {
+          // Not on a ship, clear ship state
+          this.onShip = null;
+          this.shipRelativePosition = null;
+        }
+
+        // Release cannon control (client-side cleanup to match server auto-release)
+        this.shipInputHandler.clearControlState();
+      } else {
+        // Remote player landed - show their sprite again
+        const remotePlayer = this.remotePlayers.get(data.playerId);
+        if (remotePlayer) {
+          console.log(`[GameScene] Remote player ${data.playerId} landed - showing sprite`);
+          remotePlayer.sprite.setPosition(data.screenX, data.screenY);
+          remotePlayer.sprite.setVisible(true);
+        }
+      }
+    });
+
+    // Listen for projectile spawn to hide player sprite (local or remote)
+    this.events.on('projectile-spawned', (data: any) => {
+      if (data.type === 'human_cannonball') {
+        if (data.playerId === this.playerId) {
+          // Local player launched - hide sprite and track flight
+          console.log(`[GameScene] Local player launched as human cannonball - hiding sprite`);
+          this.localPlayer.setVisible(false);
+
+          // Phase 3: Start flying, camera will follow projectile
+          this.flyingAsProjectile = true;
+          this.flyingProjectileId = data.id;
+        } else {
+          // Remote player launched - hide their sprite
+          const remotePlayer = this.remotePlayers.get(data.playerId);
+          if (remotePlayer) {
+            console.log(`[GameScene] Remote player ${data.playerId} launched as human cannonball - hiding sprite`);
+            remotePlayer.sprite.setVisible(false);
+          }
+        }
+      }
+    });
+
     console.log(`Game started as ${this.playerId}`);
   }
 
@@ -424,12 +487,33 @@ export class GameScene extends Phaser.Scene {
 
     this.checkShipBoundary();
     this.shipInputHandler.update();
+
     this.playerManager.interpolateRemotePlayers(delta, time);
     this.projectileManager.updateProjectiles(delta, this.ships);
 
+    // h2c-human-cannonball Phase 3: Camera follow during flight
+    if (this.flyingAsProjectile && this.flyingProjectileId) {
+      const projectile = this.projectiles.get(this.flyingProjectileId);
+      if (projectile) {
+        // Follow projectile during flight with smooth lerp
+        this.cameras.main.startFollow(projectile.sprite, false, 0.08, 0.08);
+      }
+    } else if (!this.flyingAsProjectile) {
+      // Follow local player normally (only update if not flying to avoid jerky transitions)
+      this.cameras.main.startFollow(this.localPlayer, true, 0.1, 0.1);
+    }
+
     // d7v-diamond-viewport: Update visibility based on diamond viewport culling
-    const centerX = this.localPlayer.x;
-    const centerY = this.localPlayer.y;
+    // h2c-human-cannonball Phase 3: Use projectile position when flying
+    let centerX = this.localPlayer.x;
+    let centerY = this.localPlayer.y;
+    if (this.flyingAsProjectile && this.flyingProjectileId) {
+      const projectile = this.projectiles.get(this.flyingProjectileId);
+      if (projectile) {
+        centerX = projectile.sprite.x;
+        centerY = projectile.sprite.y;
+      }
+    }
     this.mapManager.updateVisibleTiles(centerX, centerY);
     this.shipManager.updateVisibility(centerX, centerY);
     this.playerManager.updateVisibility(centerX, centerY);

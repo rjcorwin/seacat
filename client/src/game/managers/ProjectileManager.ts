@@ -6,6 +6,7 @@ import { ShipCommands } from '../network/ShipCommands.js';
 import { TILE_VISUAL_HEIGHT } from '../utils/Constants.js';
 import { Howl } from 'howler';
 import { ViewportManager } from '../utils/ViewportManager.js';
+import * as IsoMath from '../utils/IsometricMath.js';
 
 /**
  * Manages projectile lifecycle, physics simulation, and collision detection for ship combat.
@@ -78,7 +79,7 @@ export class ProjectileManager {
    * @param payload Spawn payload from server
    */
   spawnProjectile(payload: any): void {
-    const { id, position, velocity, timestamp, sourceShip } = payload;
+    const { id, type, playerId, position, velocity, timestamp, sourceShip } = payload;
 
     // Check for duplicate (idempotency)
     if (this.projectiles.has(id)) {
@@ -93,19 +94,18 @@ export class ProjectileManager {
     const spawnGroundX = position.x / 2 + position.y + spawnHeightZ;
     const spawnGroundY = position.y - position.x / 2 + spawnHeightZ;
 
-    console.log(`[GameScene] Spawning projectile ${id} at screen(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`);
+    console.log(`[GameScene] Spawning projectile ${id} (type: ${type || 'cannonball'}) at screen(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`);
     console.log(`  Ground position: (${spawnGroundX.toFixed(1)}, ${spawnGroundY.toFixed(1)}), height ${spawnHeightZ.toFixed(1)}`);
     console.log(`  Ground velocity: (${velocity.groundVx.toFixed(1)}, ${velocity.groundVy.toFixed(1)}) px/s`);
     console.log(`  Height velocity: ${velocity.heightVz.toFixed(1)} px/s`);
+    if (type === 'human_cannonball') {
+      console.log(`  Human cannonball for player: ${playerId}`);
+    }
 
-    // Create cannonball sprite (black circle, 8px diameter)
-    const sprite = this.scene.add.circle(
-      position.x,
-      position.y,
-      4, // radius = 4px (8px diameter)
-      0x222222, // Dark gray/black
-      1.0 // Full opacity
-    );
+    // Create projectile sprite based on type (h2c-human-cannonball Phase 2+)
+    const sprite = type === 'human_cannonball'
+      ? this.scene.add.sprite(position.x, position.y, 'player') // Player sprite for human cannonball
+      : this.scene.add.circle(position.x, position.y, 4, 0x222222, 1.0); // Black circle for cannonball
     sprite.setDepth(100); // Above ships and players
 
     // b8s-cannonball-shadows: Create shadow ellipse at ground level
@@ -124,6 +124,8 @@ export class ProjectileManager {
     // Store projectile with 3D physics data
     const projectile: Projectile = {
       id,
+      type: type || 'cannonball', // h2c-human-cannonball Phase 1
+      playerId, // h2c-human-cannonball Phase 1
       sprite,
       shadow, // b8s-cannonball-shadows
 
@@ -144,6 +146,11 @@ export class ProjectileManager {
 
     this.projectiles.set(id, projectile);
     console.log(`[GameScene] Projectile ${id} spawned successfully. Total projectiles: ${this.projectiles.size}`);
+
+    // Emit event for human cannonball spawns (h2c-human-cannonball Phase 2)
+    if (type === 'human_cannonball') {
+      this.scene.events.emit('projectile-spawned', { type, playerId, id });
+    }
 
     // Phase 5: Play cannon fire sound (c5x-ship-combat)
     this.sounds?.cannonFire?.play();
@@ -236,59 +243,167 @@ export class ProjectileManager {
       }
 
       // Phase 3: Check collision with ships (except source ship)
-      let hitShip = false;
-      ships.forEach((ship) => {
-        if (ship.id === proj.sourceShip) return; // Don't hit own ship
-        if (hitShip) return; // Already hit a ship this frame
+      // h2c-human-cannonball: Skip ship damage for human cannonballs (they land on ships instead)
+      if (proj.type !== 'human_cannonball') {
+        let hitShip = false;
+        ships.forEach((ship) => {
+          if (ship.id === proj.sourceShip) return; // Don't hit own ship
+          if (hitShip) return; // Already hit a ship this frame
 
-        // Only hit ships if projectile is at deck height (within threshold)
-        // This prevents high arcing shots from hitting ships they pass over
-        const DECK_HEIGHT_THRESHOLD = 30; // px tolerance for deck-level hits
-        if (Math.abs(proj.heightZ) > DECK_HEIGHT_THRESHOLD) {
-          return; // Projectile is too high or too low to hit ship
-        }
+          // Only hit ships if projectile is at deck height (within threshold)
+          // This prevents high arcing shots from hitting ships they pass over
+          const DECK_HEIGHT_THRESHOLD = 30; // px tolerance for deck-level hits
+          if (Math.abs(proj.heightZ) > DECK_HEIGHT_THRESHOLD) {
+            return; // Projectile is too high or too low to hit ship
+          }
 
-        // Use existing OBB collision with generous hitbox
-        const hitboxPadding = 1.2; // 20% generous hitbox
-        const paddedBoundary = {
-          width: ship.deckBoundary.width * hitboxPadding,
-          height: ship.deckBoundary.height * hitboxPadding
-        };
+          // Use existing OBB collision with generous hitbox
+          const hitboxPadding = 1.2; // 20% generous hitbox
+          const paddedBoundary = {
+            width: ship.deckBoundary.width * hitboxPadding,
+            height: ship.deckBoundary.height * hitboxPadding
+          };
 
-        if (this.collisionManager.isPointInRotatedRect(
-          { x: proj.sprite.x, y: proj.sprite.y },
-          { x: ship.sprite.x, y: ship.sprite.y },
-          paddedBoundary,
-          ship.rotation
-        )) {
-          // HIT! Show effect immediately (client prediction)
-          this.effectsRenderer.createHitEffect(proj.sprite.x, proj.sprite.y);
+          if (this.collisionManager.isPointInRotatedRect(
+            { x: proj.sprite.x, y: proj.sprite.y },
+            { x: ship.sprite.x, y: ship.sprite.y },
+            paddedBoundary,
+            ship.rotation
+          )) {
+            // HIT! Show effect immediately (client prediction)
+            this.effectsRenderer.createHitEffect(proj.sprite.x, proj.sprite.y);
 
-          // Phase 5: Play hit impact sound (c5x-ship-combat)
-          this.sounds?.hitImpact?.play();
+            // Phase 5: Play hit impact sound (c5x-ship-combat)
+            this.sounds?.hitImpact?.play();
 
-          // Send hit claim to target ship for validation (include target's position/boundary for server validation)
-          this.shipCommands.sendProjectileHitClaim(
-            ship.id,
-            proj.id,
-            Date.now(),
-            ship.sprite.x,
-            ship.sprite.y,
-            ship.rotation,
-            ship.deckBoundary
-          );
+            // Send hit claim to target ship for validation (include target's position/boundary for server validation)
+            this.shipCommands.sendProjectileHitClaim(
+              ship.id,
+              proj.id,
+              Date.now(),
+              ship.sprite.x,
+              ship.sprite.y,
+              ship.rotation,
+              ship.deckBoundary
+            );
 
-          // Despawn projectile locally
+            // Despawn projectile locally
+            proj.sprite.destroy();
+            proj.shadow.destroy(); // b8s-cannonball-shadows
+            this.projectiles.delete(id);
+            console.log(`[GameScene] Projectile ${id} hit ship ${ship.id}. Total: ${this.projectiles.size}`);
+            hitShip = true;
+            return;
+          }
+        });
+
+        if (hitShip) return; // Skip water check if we hit a ship
+      }
+
+      // h2c-human-cannonball Phase 2-5: Check for human cannonball landing
+      if (proj.type === 'human_cannonball' && proj.heightZ <= 0 && age > proj.minFlightTime) {
+        console.log(`[ProjectileManager] Human cannonball ${id} landed at ground(${proj.groundX.toFixed(1)}, ${proj.groundY.toFixed(1)}), screen(${proj.sprite.x.toFixed(1)}, ${proj.sprite.y.toFixed(1)})`);
+
+        // Phase 5.1: Check if out of bounds
+        const mapWidthPx = this.map.widthInPixels;
+        const mapHeightPx = this.map.heightInPixels;
+        const isOutOfBounds =
+          proj.groundX < 0 ||
+          proj.groundX > mapWidthPx ||
+          proj.groundY < 0 ||
+          proj.groundY > mapHeightPx;
+
+        if (isOutOfBounds) {
+          console.warn(`[ProjectileManager] Human cannonball out of bounds, respawning on source ship`);
+
+          // Respawn player on source ship
+          const sourceShip = ships.get(proj.sourceShip);
+          if (sourceShip) {
+            this.scene.events.emit('player-landed', {
+              playerId: proj.playerId,
+              groundX: sourceShip.sprite.x,
+              groundY: sourceShip.sprite.y,
+              screenX: sourceShip.sprite.x,
+              screenY: sourceShip.sprite.y,
+              onShip: proj.sourceShip,
+              shipRelativePosition: { x: 0, y: 0 }
+            });
+          }
+
+          // Despawn projectile
           proj.sprite.destroy();
-          proj.shadow.destroy(); // b8s-cannonball-shadows
+          proj.shadow.destroy();
           this.projectiles.delete(id);
-          console.log(`[GameScene] Projectile ${id} hit ship ${ship.id}. Total: ${this.projectiles.size}`);
-          hitShip = true;
+          console.log(`[ProjectileManager] Human cannonball projectile ${id} despawned (out of bounds). Total: ${this.projectiles.size}`);
           return;
         }
-      });
 
-      if (hitShip) return; // Skip water check if we hit a ship
+        // Phase 4: Check for ship collision first (using screen coordinates)
+        let landedOnShip = false;
+
+        for (const [shipId, ship] of ships) {
+          const isOnShip = this.collisionManager.isPointInRotatedRect(
+            { x: proj.sprite.x, y: proj.sprite.y }, // Use screen coordinates for collision
+            { x: ship.sprite.x, y: ship.sprite.y },
+            ship.deckBoundary,
+            ship.rotation
+          );
+
+          if (isOnShip) {
+            console.log(`[ProjectileManager] Human cannonball landed on ship ${shipId}!`);
+
+            // Calculate ship-relative position using inverse rotation (use screen delta)
+            const dx = proj.sprite.x - ship.sprite.x;
+            const dy = proj.sprite.y - ship.sprite.y;
+            const relativePos = IsoMath.rotatePointIsometric(
+              { x: dx, y: dy },
+              -ship.rotation
+            );
+
+            // Emit event to board ship
+            this.scene.events.emit('player-landed', {
+              playerId: proj.playerId,
+              groundX: proj.groundX,
+              groundY: proj.groundY,
+              screenX: proj.sprite.x,
+              screenY: proj.sprite.y,
+              onShip: shipId,
+              shipRelativePosition: relativePos
+            });
+
+            // Show hit effect for ship landing (Phase 5.3)
+            this.effectsRenderer.createHitEffect(proj.sprite.x, proj.sprite.y);
+
+            landedOnShip = true;
+            break;
+          }
+        }
+
+        if (!landedOnShip) {
+          // Phase 2: Water/ground landing (existing behavior)
+          // Show landing effect
+          this.effectsRenderer.createWaterSplash(proj.sprite.x, proj.sprite.y);
+
+          // Play landing sound
+          this.sounds?.waterSplash?.play();
+
+          // Emit event for player teleport (will be caught by GameScene)
+          this.scene.events.emit('player-landed', {
+            playerId: proj.playerId,
+            groundX: proj.groundX,
+            groundY: proj.groundY,
+            screenX: proj.sprite.x,
+            screenY: proj.sprite.y
+          });
+        }
+
+        // Despawn projectile
+        proj.sprite.destroy();
+        proj.shadow.destroy();
+        this.projectiles.delete(id);
+        console.log(`[ProjectileManager] Human cannonball projectile ${id} despawned. Total: ${this.projectiles.size}`);
+        return;
+      }
 
       // Phase 2c: Check for water surface collision using 3D height
       // ONLY check if: (1) past grace period AND (2) descending (heightVz < 0, since positive = upward)

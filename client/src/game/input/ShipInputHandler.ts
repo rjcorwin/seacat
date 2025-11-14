@@ -60,6 +60,7 @@ export class ShipInputHandler {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private interactKey: Phaser.Input.Keyboard.Key;
   private spaceKey: Phaser.Input.Keyboard.Key;
+  private tabKey: Phaser.Input.Keyboard.Key; // h2c-human-cannonball Phase 1: For cycling ammunition
   private gamepad: (() => Phaser.Input.Gamepad.Gamepad | null) | null = null; // g4p Phase 1
 
   // Control state
@@ -72,6 +73,7 @@ export class ShipInputHandler {
   // Gamepad button state tracking (g4p Phase 1)
   private lastInteractButtonState = false;
   private lastFireButtonState = false;
+  private lastCycleAmmoButtonState = false; // h2c-human-cannonball Phase 1: Track Tab/LB/RB button state
 
   // Elevation adjustment throttling
   private lastElevationAdjustTime = 0;
@@ -91,7 +93,8 @@ export class ShipInputHandler {
     playerId: string,
     cursors: Phaser.Types.Input.Keyboard.CursorKeys,
     interactKey: Phaser.Input.Keyboard.Key,
-    spaceKey: Phaser.Input.Keyboard.Key
+    spaceKey: Phaser.Input.Keyboard.Key,
+    tabKey: Phaser.Input.Keyboard.Key
   ) {
     this.scene = scene;
     this.ships = ships;
@@ -101,6 +104,7 @@ export class ShipInputHandler {
     this.cursors = cursors;
     this.interactKey = interactKey;
     this.spaceKey = spaceKey;
+    this.tabKey = tabKey;
   }
 
   /**
@@ -272,6 +276,19 @@ export class ShipInputHandler {
 
   public getCurrentCannonAim(): number {
     return this.currentCannonAim;
+  }
+
+  /**
+   * Clear all control state (h2c-human-cannonball Phase 3)
+   * Used when player lands after being fired from cannon
+   */
+  public clearControlState(): void {
+    this.controllingShip = null;
+    this.controllingPoint = null;
+    this.controllingCannon = null;
+    this.currentCannonAim = 0;
+    this.currentWheelDirection = null;
+    console.log('[ShipInputHandler] Cleared control state');
   }
 
   /**
@@ -558,6 +575,23 @@ export class ShipInputHandler {
             elevationInput
           );
         }
+
+        // Cycle ammunition type (h2c-human-cannonball Phase 1)
+        // Keyboard: Tab key
+        // Controller: LB or RB bumpers
+        const gamepad = this.gamepad?.();
+        const tabPressed = Phaser.Input.Keyboard.JustDown(this.tabKey);
+        const lbPressed = gamepad?.buttons[4]?.pressed && !this.lastCycleAmmoButtonState; // LB = index 4
+        const rbPressed = gamepad?.buttons[5]?.pressed && !this.lastCycleAmmoButtonState; // RB = index 5
+        const cycleAmmoPressed = tabPressed || lbPressed || rbPressed;
+
+        if (cycleAmmoPressed) {
+          console.log(`[ShipInputHandler] Cycling ammunition for ${this.controllingCannon.side} cannon ${this.controllingCannon.index}`);
+          this.shipCommands.cycleAmmo(this.controllingShip, this.controllingCannon.side, this.controllingCannon.index);
+        }
+
+        // Update last button state for next frame
+        this.lastCycleAmmoButtonState = gamepad?.buttons[4]?.pressed || gamepad?.buttons[5]?.pressed || false;
 
         // Space bar or R2 trigger to fire cannon (g4p Phase 1)
         if (this.isFireJustPressed()) {

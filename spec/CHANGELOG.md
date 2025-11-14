@@ -7,6 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **h2c-human-cannonball**: Load yourself into ship cannons and launch across the map
+  - Status: Done (implemented 2025-11-13)
+  - Players can cycle ammunition (Tab/LB/RB) to select human cannonball mode
+  - Launch yourself as projectile with same aim/elevation controls as cannonballs
+  - Player sprite visible during flight (not green circle)
+  - Camera follows player during 2-3 second flight
+  - Auto-board ships on deck landing, water splash on water landing
+  - Out of bounds safety: respawn on source ship
+  - Reuses 3D projectile physics (gravity, trajectory) with identical server/client simulation
+  - Network protocol: `game/projectile_spawn` with `type: 'human_cannonball'` and `playerId`
+  - Client-side landing detection (ship OBB collision, bounds checking)
+  - Primary use case: Fast traversal and boarding enemy ships from above
+  - See proposal: `spec/proposals/h2c-human-cannonball/`
+  - See implementation: `spec/proposals/h2c-human-cannonball/implementation.md`
+
 - **s2e-ship-enhancements**: Add helm, cannons, and rigging to ship sprite
   - Status: Draft (proposal created 2025-11-09)
   - Adds steering wheel (helm) at stern (x=-54, y=0)

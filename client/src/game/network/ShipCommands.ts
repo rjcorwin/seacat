@@ -279,6 +279,23 @@ export class ShipCommands {
   }
 
   /**
+   * Cycle ammunition type for cannon (h2c-human-cannonball Phase 1)
+   */
+  cycleAmmo(shipId: string, side: 'port' | 'starboard', index: number): void {
+    this.client.send({
+      kind: 'ship/cycle_ammo',
+      to: [shipId],
+      payload: {
+        side,
+        index,
+        playerId: this.playerId,
+      },
+    });
+
+    console.log(`[ShipCommands] Sent cycle_ammo to ${shipId}: ${side}[${index}]`);
+  }
+
+  /**
    * Fire cannon (c5x-ship-combat)
    */
   fireCannon(shipId: string, side: 'port' | 'starboard', index: number): void {

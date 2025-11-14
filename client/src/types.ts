@@ -135,6 +135,7 @@ export interface Ship {
       aimAngle: number;
       elevationAngle: number;
       cooldownRemaining: number;
+      currentAmmo?: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball Phase 1
     }>;
     starboard: Array<{
       sprite: Phaser.GameObjects.Graphics;
@@ -144,6 +145,7 @@ export interface Ship {
       aimAngle: number;
       elevationAngle: number;
       cooldownRemaining: number;
+      currentAmmo?: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball Phase 1
     }>;
   };
   speedLevel: number;
@@ -166,10 +168,13 @@ export interface Ship {
  * Projectile entity managed by the game (c5x-ship-combat Phase 2)
  * Updated to use 3D physics (p2v-projectile-velocity Option 2)
  * Updated to include shadows (b8s-cannonball-shadows)
+ * Updated to support player sprite for human cannonballs (h2c-human-cannonball Phase 4+)
  */
 export interface Projectile {
   id: string;
-  sprite: Phaser.GameObjects.Arc;
+  type: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball Phase 1
+  playerId?: string; // h2c-human-cannonball Phase 1 (only for human_cannonball type)
+  sprite: Phaser.GameObjects.Arc | Phaser.GameObjects.Sprite; // Arc for cannonballs, Sprite for human
   shadow: Phaser.GameObjects.Ellipse; // Ground-level shadow (b8s-cannonball-shadows)
 
   // Ground position and velocity (horizontal movement on isometric map)
