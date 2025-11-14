@@ -141,7 +141,7 @@ export class ShipRenderer {
    */
   drawCannon(
     graphics: Phaser.GameObjects.Graphics,
-    cannon: { relativePosition: { x: number; y: number }; controlledBy: string | null; aimAngle: number; elevationAngle: number; cooldownRemaining: number },
+    cannon: { relativePosition: { x: number; y: number }; controlledBy: string | null; aimAngle: number; elevationAngle: number; cooldownRemaining: number; currentAmmo?: 'cannonball' | 'human_cannonball' },
     shipSprite: Phaser.GameObjects.Sprite,
     shipRotation: number,
     isPlayerNear: boolean = false,
@@ -252,6 +252,28 @@ export class ShipRenderer {
       // Draw elevation number
       graphics.fillStyle(0x000000, 0.8);
       graphics.fillRect(elevBarX - 2, elevBarY - 42, 44, 14);
+
+      // Draw ammunition type indicator (h2c-human-cannonball Phase 1)
+      // Position to the right of elevation bar
+      const ammoType = cannon.currentAmmo || 'cannonball';
+      const ammoIndicatorX = elevBarX + 50; // Right of elevation bar
+      const ammoIndicatorY = elevBarY - 20;
+
+      if (ammoType === 'cannonball') {
+        // Black filled circle for cannonball
+        graphics.fillStyle(0x000000, 1);
+        graphics.fillCircle(ammoIndicatorX, ammoIndicatorY, 8);
+        graphics.lineStyle(2, 0xffffff, 1);
+        graphics.strokeCircle(ammoIndicatorX, ammoIndicatorY, 8);
+      } else {
+        // Green filled circle with yellow ring for human cannonball
+        graphics.fillStyle(0x00ff00, 1);
+        graphics.fillCircle(ammoIndicatorX, ammoIndicatorY, 8);
+        graphics.lineStyle(2, 0xffffff, 1);
+        graphics.strokeCircle(ammoIndicatorX, ammoIndicatorY, 8);
+        graphics.lineStyle(2, 0xffff00, 1);
+        graphics.strokeCircle(ammoIndicatorX, ammoIndicatorY, 11);
+      }
       // Note: Phaser Graphics doesn't support text, we'd need a Text object for actual numbers
       // For now, the bar indicator shows elevation visually
     }

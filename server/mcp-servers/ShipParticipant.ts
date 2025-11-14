@@ -20,6 +20,7 @@ import {
   AimCannonPayload,
   AdjustElevationPayload,
   FireCannonPayload,
+  CycleAmmoPayload,
 } from './types.js';
 
 export interface ShipParticipantConfig {
@@ -117,6 +118,10 @@ export class ShipParticipant {
           this.handleAdjustElevation(envelope.payload as AdjustElevationPayload);
           break;
 
+        case 'ship/cycle_ammo':
+          this.handleCycleAmmo(envelope.payload as CycleAmmoPayload);
+          break;
+
         case 'ship/fire_cannon':
           this.handleFireCannon(envelope.payload as FireCannonPayload);
           break;
@@ -204,6 +209,12 @@ export class ShipParticipant {
     this.broadcastPosition();
   }
 
+  private handleCycleAmmo(payload: import('./types.js').CycleAmmoPayload) {
+    this.server.handleCycleAmmo(payload.playerId, payload.side, payload.index);
+    // Immediately broadcast updated cannon state
+    this.broadcastPosition();
+  }
+
   private handleFireCannon(payload: FireCannonPayload) {
     console.log(`[ShipParticipant] Received fire_cannon message:`, payload);
     const projectile = this.server.fireCannon(payload.playerId, payload.side, payload.index);
@@ -215,14 +226,15 @@ export class ShipParticipant {
         to: [], // Broadcast to all
         payload: {
           id: projectile.id,
-          type: 'cannonball',
+          type: projectile.type, // h2c-human-cannonball Phase 2
+          playerId: projectile.playerId, // h2c-human-cannonball Phase 2
           sourceShip: projectile.sourceShip,
           position: projectile.spawnPosition,
           velocity: projectile.initialVelocity,
           timestamp: projectile.spawnTime,
         },
       });
-      console.log(`[ShipParticipant] Broadcasted projectile spawn: ${projectile.id}`);
+      console.log(`[ShipParticipant] Broadcasted projectile spawn: ${projectile.id} (type: ${projectile.type})`);
     }
 
     // Broadcast updated state (includes updated cooldown)
@@ -356,6 +368,7 @@ export class ShipParticipant {
             aimAngle: cannon.aimAngle,
             elevationAngle: cannon.elevationAngle,
             cooldownRemaining: cannon.cooldownRemaining,
+            currentAmmo: cannon.currentAmmo, // h2c-human-cannonball Phase 1
           })),
           starboard: state.cannons.starboard.map(cannon => ({
             worldPosition: {
@@ -366,6 +379,7 @@ export class ShipParticipant {
             aimAngle: cannon.aimAngle,
             elevationAngle: cannon.elevationAngle,
             cooldownRemaining: cannon.cooldownRemaining,
+            currentAmmo: cannon.currentAmmo, // h2c-human-cannonball Phase 1
           })),
         },
         // Phase 3: Health data

@@ -18,6 +18,8 @@ import {
   Position,
   Velocity,
   MapDataPayload,
+  Projectile,
+  PROJECTILE_LIFETIME_MS,
 } from './types.js';
 
 /**
@@ -94,6 +96,7 @@ export class ShipServer {
           elevationAngle: Math.PI / 6, // 30° default elevation (0.52 rad)
           cooldownRemaining: 0,
           lastFired: 0,
+          currentAmmo: 'cannonball' as const, // h2c-human-cannonball Phase 1
         })),
         starboard: config.cannonPositions.starboard.map((pos, index) => ({
           type: 'cannon' as const,
@@ -105,6 +108,7 @@ export class ShipServer {
           elevationAngle: Math.PI / 6, // 30° default elevation (0.52 rad)
           cooldownRemaining: 0,
           lastFired: 0,
+          currentAmmo: 'cannonball' as const, // h2c-human-cannonball Phase 1
         })),
       },
       deckBoundary: {
@@ -580,6 +584,7 @@ export class ShipServer {
     }
 
     cannon.controlledBy = null;
+    cannon.currentAmmo = 'cannonball'; // h2c-human-cannonball Phase 1: Reset to default
     console.log(`Player ${playerId} released cannon ${side} ${index}`);
   }
 
@@ -631,6 +636,30 @@ export class ShipServer {
     cannon.elevationAngle = Math.max(minElevation, Math.min(maxElevation, newElevation));
 
     console.log(`Player ${playerId} adjusted elevation for cannon ${side} ${index} to ${(cannon.elevationAngle * 180 / Math.PI).toFixed(1)}°`);
+  }
+
+  /**
+   * Cycle ammunition type for a cannon (h2c-human-cannonball Phase 1)
+   */
+  public handleCycleAmmo(playerId: string, side: 'port' | 'starboard', index: number) {
+    const cannons = side === 'port' ? this.state.cannons.port : this.state.cannons.starboard;
+    const cannon = cannons[index];
+
+    if (!cannon) {
+      console.warn(`Cannon not found: ${side}[${index}]`);
+      return;
+    }
+
+    // Validate player is controlling this cannon
+    if (cannon.controlledBy !== playerId) {
+      console.warn(`Player ${playerId} cannot cycle ammo - not controlling ${side} cannon ${index}`);
+      return;
+    }
+
+    // Toggle ammunition type
+    cannon.currentAmmo = cannon.currentAmmo === 'cannonball' ? 'human_cannonball' : 'cannonball';
+
+    console.log(`[ShipServer] Player ${playerId} cycled ${side} cannon ${index} ammo to: ${cannon.currentAmmo}`);
   }
 
   public fireCannon(playerId: string, side: 'port' | 'starboard', index: number): import('./types.js').Projectile | null {
@@ -736,9 +765,11 @@ export class ShipServer {
     // 4. Generate unique projectile ID
     const projectileId = `${this.state.participantId}-${side}-${index}-${now}`;
 
-    // 5. Create projectile object
-    const projectile: import('./types.js').Projectile = {
+    // 5. Create projectile object (h2c-human-cannonball Phase 1: Add type and playerId)
+    const projectile: Projectile = {
       id: projectileId,
+      type: cannon.currentAmmo, // Use current ammunition type
+      playerId: cannon.currentAmmo === 'human_cannonball' ? playerId : undefined,
       sourceShip: this.state.participantId,
       spawnTime: now,
       spawnPosition: spawnPos,
@@ -748,16 +779,23 @@ export class ShipServer {
     // 6. Store in active projectiles for Phase 3 hit validation
     this.activeProjectiles.set(projectileId, projectile);
 
-    // 7. Auto-cleanup after 3 seconds (gives clients 1s grace period for validation)
+    // 7. Auto-cleanup after projectile lifetime expires
     setTimeout(() => {
       this.activeProjectiles.delete(projectileId);
-      console.log(`Projectile ${projectileId} expired (5s lifetime)`);
-    }, 5000);
+      console.log(`Projectile ${projectileId} expired (${PROJECTILE_LIFETIME_MS}ms lifetime)`);
+    }, PROJECTILE_LIFETIME_MS);
 
     console.log(`  Projectile spawned at (${spawnPos.x.toFixed(1)}, ${spawnPos.y.toFixed(1)})`);
     console.log(`  Fire angle (horiz): ${(fireAngle * 180 / Math.PI).toFixed(1)}°, Elevation: ${(elevation * 180 / Math.PI).toFixed(1)}°`);
     console.log(`  Initial 3D velocity: ground(${vel.groundVx.toFixed(1)}, ${vel.groundVy.toFixed(1)}), height ${vel.heightVz.toFixed(1)} px/s`);
     console.log(`  Ship velocity: (${this.state.velocity.x.toFixed(1)}, ${this.state.velocity.y.toFixed(1)}) px/s`);
+
+    // Auto-release cannon control if firing human cannonball (h2c-human-cannonball Phase 2)
+    if (cannon.currentAmmo === 'human_cannonball') {
+      console.log(`[ShipServer] Auto-releasing ${side} cannon ${index} after launching player ${playerId}`);
+      cannon.controlledBy = null;
+      cannon.currentAmmo = 'cannonball'; // Reset to default
+    }
 
     return projectile;
   }

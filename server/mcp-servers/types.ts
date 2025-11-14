@@ -3,6 +3,12 @@
  */
 
 /**
+ * Projectile lifetime in milliseconds (both client and server)
+ * Safety net to prevent orphaned projectiles (typical flight time is 2-3s)
+ */
+export const PROJECTILE_LIFETIME_MS = 5000;
+
+/**
  * 8-directional heading for ship navigation
  */
 export type ShipHeading =
@@ -69,6 +75,7 @@ export interface CannonControlPoint {
   elevationAngle: number; // Vertical elevation in radians (15° to 60° = 0.26-1.05 rad)
   cooldownRemaining: number; // ms until can fire again
   lastFired: number; // Timestamp of last fire
+  currentAmmo: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball Phase 1
 }
 
 /**
@@ -201,11 +208,22 @@ export interface FireCannonPayload {
 }
 
 /**
+ * Cycle ammunition type (h2c-human-cannonball Phase 1)
+ */
+export interface CycleAmmoPayload {
+  side: 'port' | 'starboard';
+  index: number;
+  playerId: string;
+}
+
+/**
  * Projectile data (c5x-ship-combat Phase 2)
  * Updated to use 3D velocity (p2v-projectile-velocity)
  */
 export interface Projectile {
   id: string;
+  type: 'cannonball' | 'human_cannonball'; // h2c-human-cannonball Phase 1
+  playerId?: string; // h2c-human-cannonball Phase 1 (only for human_cannonball)
   sourceShip: string;
   spawnTime: number;
   spawnPosition: Position;

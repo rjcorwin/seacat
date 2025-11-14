@@ -1242,7 +1242,7 @@ Critical that these constants stay synchronized between client and server:
 2. Server calculates 3D velocity from aim/elevation angles using inverse isometric transform
 3. Server broadcasts `game/projectile_spawn` to all clients with Velocity3D
 4. All clients simulate identical physics using iterative Euler integration
-5. Lifetime: 2 seconds client-side, 5 seconds server-side (3s grace for validation)
+5. Lifetime: 5 seconds (both client and server despawn timeout; typical flight time is 2-3s)
 
 **Visual Effects:**
 - Cannonballs: Black circles (8px diameter, 4px radius)
@@ -1404,6 +1404,68 @@ Critical that these constants stay synchronized between client and server:
 **Status - Audio Working:**
 Audio system implemented with Howler.js (replacing Phaser audio). All combat sounds working in Electron. See `spec/seacat/proposals/c5x-ship-combat/implementation.md` Phase 5 for troubleshooting history and solution details.
 
+### Phase 6: Human Cannonball (h2c-human-cannonball) ✅ COMPLETE
+
+**Overview:**
+Players can load themselves into ship cannons and launch across the map for fast traversal and boarding. This feature reuses the existing 3D projectile physics system, treating players as special "human_cannonball" projectiles with identical ballistic simulation.
+
+**Ammunition Cycling:**
+- **Tab key** (keyboard) or **LB/RB bumpers** (controller) cycle between ammunition types
+- Default: Cannonball (black circle indicator)
+- Alternate: Human Cannonball (green circle with yellow ring indicator)
+- Selection resets to Cannonball when releasing cannon control
+- Ammo indicator displayed next to elevation bar in world space
+
+**Launch Mechanics:**
+- Same aiming controls as regular cannonballs (Left/Right for aim, Up/Down for elevation)
+- Fire with Space/RT when human cannonball selected
+- Player sprite becomes visible projectile (not hidden during flight)
+- Camera smoothly follows player during 2-3 second flight
+- Server spawns `human_cannonball` projectile with player's `playerId`
+- Server auto-releases cannon control after firing (prevents stuck state)
+
+**Physics & Trajectory:**
+- Identical 3D physics as cannonballs (ground + height coordinate separation)
+- Same gravity (150 px/s²), velocity calculations, and trajectory simulation
+- Client and server use matching iterative Euler integration for consistency
+- Typical range: 450-600px depending on elevation angle
+- Flight time: 2-3 seconds depending on trajectory
+
+**Landing Detection (Client-Side):**
+1. **Ship Landing:** OBB collision check at deck height
+   - Auto-board ship if landing on deck boundary
+   - Calculate ship-relative position using inverse rotation
+   - Show hit effect visual (no sound)
+   - Player can immediately walk on ship deck
+2. **Water/Ground Landing:**
+   - Teleport player to landing position
+   - Show water splash effect + sound
+   - Player can immediately move after landing
+3. **Out of Bounds:**
+   - Respawn on source ship at deck center
+   - Automatic safety net prevents getting stuck outside map
+
+**Critical Implementation Details:**
+- Human cannonballs **skip ship damage collision** (prevents treating player as weapon hit)
+- Uses screen coordinates (sprite.x/y) not ground coordinates for collision detection
+- Landing events update player's `onShip` state for proper ship boarding
+- Player sprite visible throughout flight (not placeholder green circle)
+- No fall damage or injury mechanics (pure traversal feature)
+
+**Network Protocol:**
+- Extends `game/projectile_spawn` message with `type: 'human_cannonball'` and `playerId` fields
+- Server broadcasts human projectiles to all clients (identical to cannonballs)
+- Landing detection is client-side only (peer-to-peer position reporting via MEW protocol)
+
+**Use Cases:**
+- Fast travel across water and islands
+- Boarding enemy ships from above
+- Escaping danger quickly
+- Coordinated multi-crew boarding attacks
+- Emergent gameplay and stunts
+
+**See:** `spec/proposals/h2c-human-cannonball/` for full specification and implementation details.
+
 ---
 
 ## Combat Protocol Messages
@@ -1480,6 +1542,23 @@ Player adjusts cannon elevation angle.
 
 **Constraints:** Server clamps elevation to 15-60° range.
 
+#### `ship/cycle_ammo`
+Player cycles ammunition type (h2c-human-cannonball).
+
+```typescript
+{
+  kind: 'ship/cycle_ammo',
+  to: ['ship1'],
+  payload: {
+    playerId: string,
+    side: 'port' | 'starboard',
+    index: number
+  }
+}
+```
+
+**Behavior:** Toggles between `'cannonball'` and `'human_cannonball'` ammunition types. Server updates cannon's `currentAmmo` field and broadcasts via `game/position` update.
+
 #### `ship/fire_cannon`
 Player fires cannon.
 
@@ -1508,16 +1587,21 @@ Ship broadcasts projectile creation after cannon fires.
   to: [],                  // Broadcast to all participants
   payload: {
     id: string,            // Unique ID: "shipId-side-index-timestamp"
-    type: 'cannonball',
+    type: 'cannonball' | 'human_cannonball',  // h2c: Added human_cannonball type
+    playerId?: string,     // h2c: Present only for human_cannonball type
     sourceShip: string,    // Ship ID that fired
-    position: { x: number, y: number },      // World coordinates
-    velocity: { x: number, y: number },      // px/s (includes ship velocity)
+    position: { x: number, y: number },       // Screen coordinates (isometric)
+    velocity: {            // h2c: 3D velocity (ground + height separation)
+      groundVx: number,    // Ground horizontal velocity (px/s)
+      groundVy: number,    // Ground horizontal velocity (px/s)
+      heightVz: number     // Vertical velocity (px/s, positive = upward)
+    },
     timestamp: number      // Server time (for physics replay)
   }
 }
 ```
 
-**Physics:** All clients simulate identical trajectories using deterministic physics (gravity = 150 px/s²).
+**Physics:** All clients simulate identical trajectories using deterministic 3D physics (gravity = 150 px/s²). Human cannonballs use same physics as regular cannonballs but skip ship damage collision on landing.
 
 #### `game/projectile_hit_claim`
 Client claims projectile hit for server validation.

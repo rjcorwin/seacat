@@ -234,6 +234,7 @@ export class ShipManager {
               aimAngle: cannonData.aimAngle,
               elevationAngle: cannonData.elevationAngle || Math.PI / 6, // Default 30° if not present
               cooldownRemaining: cannonData.cooldownRemaining,
+              currentAmmo: (cannonData as any).currentAmmo || 'cannonball', // h2c-human-cannonball Phase 1
             };
           }),
           starboard: update.shipData.cannons.starboard.map((cannonData) => {
@@ -252,6 +253,7 @@ export class ShipManager {
               aimAngle: cannonData.aimAngle,
               elevationAngle: cannonData.elevationAngle || Math.PI / 6, // Default 30° if not present
               cooldownRemaining: cannonData.cooldownRemaining,
+              currentAmmo: (cannonData as any).currentAmmo || 'cannonball', // h2c-human-cannonball Phase 1
             };
           }),
         } : undefined,
@@ -298,6 +300,7 @@ export class ShipManager {
             cannon.aimAngle = serverCannon.aimAngle;
             cannon.elevationAngle = serverCannon.elevationAngle || cannon.elevationAngle; // Update if present
             cannon.cooldownRemaining = serverCannon.cooldownRemaining;
+            cannon.currentAmmo = (serverCannon as any).currentAmmo || cannon.currentAmmo || 'cannonball'; // h2c-human-cannonball Phase 1
           }
         });
         ship.cannons.starboard.forEach((cannon, index) => {
@@ -307,6 +310,7 @@ export class ShipManager {
             cannon.aimAngle = serverCannon.aimAngle;
             cannon.elevationAngle = serverCannon.elevationAngle || cannon.elevationAngle; // Update if present
             cannon.cooldownRemaining = serverCannon.cooldownRemaining;
+            cannon.currentAmmo = (serverCannon as any).currentAmmo || cannon.currentAmmo || 'cannonball'; // h2c-human-cannonball Phase 1
           }
         });
       }
