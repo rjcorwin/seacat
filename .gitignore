@@ -64,6 +64,9 @@ temp/
 client/release/
 client/out/
 
+# Steam Deck deployment configuration (personal device list)
+client/steamdeck-hosts.txt
+
 # Game assets (optional - uncomment if you don't want to track large assets)
 # client/assets/sprites/*.png
 # client/assets/sounds/*.mp3
