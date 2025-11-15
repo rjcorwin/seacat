@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **m3d-multi-steamdeck-deploy**: Deploy to multiple Steam Deck devices with a single command
+  - Status: Draft (proposal created 2025-11-14)
+  - Configuration file (`steamdeck-hosts.txt`) to specify target devices
+  - Deploy to all listed devices sequentially from one command
+  - Clear success/failure feedback per device
+  - Resilient deployment (continues on partial failure)
+  - Backward compatible (still works with single device)
+  - Build once, deploy to all devices (efficient workflow)
+  - Git-ignored personal config with committed example template
+  - Enables rapid multi-player testing across multiple physical devices
+  - See proposal: `spec/proposals/m3d-multi-steamdeck-deploy/`
+  - See research: `spec/proposals/m3d-multi-steamdeck-deploy/research.md`
+
 - **h2c-human-cannonball**: Load yourself into ship cannons and launch across the map
   - Status: Done (implemented 2025-11-13)
   - Players can cycle ammunition (Tab/LB/RB) to select human cannonball mode

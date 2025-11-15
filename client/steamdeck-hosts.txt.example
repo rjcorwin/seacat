@@ -1,0 +1,47 @@
+# Steam Deck Deployment Targets
+# Copy this file to steamdeck-hosts.txt and customize for your devices
+#
+# Usage:
+#   cp steamdeck-hosts.txt.example steamdeck-hosts.txt
+#   # Edit steamdeck-hosts.txt with your device hostnames or IPs
+#   npm run deploy:steamdeck
+#
+# Format: One hostname or IP address per line
+# Lines starting with # are comments and will be ignored
+
+# Example 1: Using mDNS hostnames (requires unique hostnames on each deck)
+steamdeck1.local
+steamdeck2.local
+steamdeck3.local
+
+# Example 2: Using IP addresses (more reliable on some networks)
+# 192.168.1.101
+# 192.168.1.102
+# 192.168.1.103
+
+# Example 3: Mix of both
+# steamdeck1.local
+# 192.168.1.102
+# steamdeck3.local
+
+# Setup Instructions:
+#
+# 1. Set unique hostname on each Steam Deck (for mDNS):
+#    On Steam Deck in Desktop Mode:
+#      sudo hostnamectl set-hostname steamdeck1  # or steamdeck2, steamdeck3, etc.
+#      sudo systemctl restart avahi-daemon
+#
+# 2. Enable SSH on each Steam Deck (required):
+#    On Steam Deck in Desktop Mode:
+#      sudo systemctl enable sshd
+#      sudo systemctl start sshd
+#
+# 3. Set up SSH keys (optional, but recommended to avoid password prompts):
+#    On your development machine:
+#      ssh-keygen -t ed25519 -C "seacat-deployment"
+#      ssh-copy-id deck@steamdeck1.local  # repeat for each device
+#
+# 4. Find your Steam Deck's IP address (if using IPs instead of hostnames):
+#    On Steam Deck in Desktop Mode, open Konsole:
+#      ip addr show | grep "inet "
+#    Look for your local network IP (usually 192.168.x.x or 10.0.x.x)

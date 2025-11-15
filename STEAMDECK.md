@@ -27,7 +27,60 @@ Both methods create files in `client/release/`:
 - `Seacat-0.1.0.AppImage` - Self-contained executable for Steam Deck (x86_64)
 - `@seacat/client-0.1.0.tar.gz` - Tarball archive
 
-## Installing on Steam Deck
+## Automated Deployment (Recommended)
+
+The easiest way to deploy to your Steam Deck(s) is using the automated deployment script:
+
+### Single Device Deployment
+
+```bash
+cd client
+npm run deploy:steamdeck
+```
+
+This will build the AppImage and transfer it to `steamdeck.local`.
+
+### Multi-Device Deployment
+
+If you have multiple Steam Decks (for local multiplayer testing):
+
+1. **Create device configuration**:
+   ```bash
+   cd client
+   cp steamdeck-hosts.txt.example steamdeck-hosts.txt
+   # Edit steamdeck-hosts.txt with your device hostnames or IPs
+   ```
+
+2. **Deploy to all devices**:
+   ```bash
+   npm run deploy:steamdeck
+   ```
+
+**Example `steamdeck-hosts.txt`**:
+```
+# Using mDNS hostnames
+steamdeck1.local
+steamdeck2.local
+steamdeck3.local
+
+# Or using IP addresses
+# 192.168.1.101
+# 192.168.1.102
+# 192.168.1.103
+```
+
+**Prerequisites for multi-device deployment**:
+- Set unique hostnames on each Steam Deck (see [Setup Instructions](#setting-unique-hostnames) below)
+- Enable SSH on each device (see [SSH Setup](#ssh-setup) below)
+- Recommended: Set up SSH keys to avoid password prompts (see [SSH Key Setup](#ssh-key-setup) below)
+
+The script will:
+- Build the AppImage once
+- Deploy to all listed devices sequentially
+- Report success/failure for each device
+- Continue deploying even if one device fails
+
+## Manual Installation (Alternative)
 
 ### Method 1: AppImage (Recommended - Easiest)
 
@@ -107,7 +160,99 @@ cat .mew/tokens/player1.token
 
 Copy this token and use it in your Steam launch options with `--token=...`
 
+## Setup Instructions
+
+### Setting Unique Hostnames
+
+If you have multiple Steam Decks, set a unique hostname on each to avoid `steamdeck.local` collision:
+
+```bash
+# On Steam Deck in Desktop Mode (open Konsole)
+
+# For first Steam Deck:
+sudo hostnamectl set-hostname steamdeck1
+sudo systemctl restart avahi-daemon
+
+# For second Steam Deck:
+sudo hostnamectl set-hostname steamdeck2
+sudo systemctl restart avahi-daemon
+
+# For third Steam Deck:
+sudo hostnamectl set-hostname steamdeck3
+sudo systemctl restart avahi-daemon
+```
+
+**Verify from your development machine**:
+```bash
+ping steamdeck1.local
+ping steamdeck2.local
+ping steamdeck3.local
+```
+
+### SSH Setup
+
+Enable SSH on each Steam Deck (required for automated deployment):
+
+```bash
+# On Steam Deck in Desktop Mode (open Konsole)
+sudo systemctl enable sshd
+sudo systemctl start sshd
+
+# Set a password if you haven't already
+passwd
+```
+
+**Verify SSH is working from your development machine**:
+```bash
+ssh deck@steamdeck1.local
+# Enter password when prompted
+# Type 'exit' to close connection
+```
+
+### SSH Key Setup
+
+Set up SSH keys to avoid password prompts during deployment (highly recommended):
+
+```bash
+# On your development machine (macOS/Linux)
+
+# Generate SSH key if you don't have one
+ssh-keygen -t ed25519 -C "seacat-deployment"
+# Press Enter to accept default location
+# Press Enter twice to skip passphrase (or set one if you prefer)
+
+# Copy key to each Steam Deck
+ssh-copy-id deck@steamdeck1.local
+ssh-copy-id deck@steamdeck2.local
+ssh-copy-id deck@steamdeck3.local
+# Enter password when prompted for each device
+```
+
+**Verify password-less login works**:
+```bash
+ssh deck@steamdeck1.local
+# Should connect without asking for password
+```
+
+Now `npm run deploy:steamdeck` will deploy without password prompts!
+
 ## Troubleshooting
+
+### Deployment Issues
+
+**"Transfer failed" or "Connection refused"**:
+- Check SSH is enabled: `sudo systemctl start sshd` (on Steam Deck)
+- Verify hostname/IP is correct in `steamdeck-hosts.txt`
+- Check network connectivity: `ping steamdeck1.local` (from your machine)
+- If using mDNS, verify avahi is running: `sudo systemctl status avahi-daemon` (on Steam Deck)
+
+**"Permission denied" during deployment**:
+- Set up SSH keys (see [SSH Key Setup](#ssh-key-setup) above)
+- Or enter password when prompted during deployment
+
+**Multiple Steam Decks but all resolve to same device**:
+- Set unique hostnames on each device (see [Setting Unique Hostnames](#setting-unique-hostnames) above)
+- Or use IP addresses in `steamdeck-hosts.txt` instead of hostnames
 
 ### Game crashes immediately (Steam spinner then exits)
 
